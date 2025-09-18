@@ -71,7 +71,9 @@ This section discusses the implications and reasons of the design decisions made
 
 ## 5. Acceptance criteria
 
-This section discusses the minimum acceptance criteria at the end of the project and stretch goals.
+Overall, our minimum acceptance criteria is to build an intelligent model that can utilize a large set of data from an aggregated set of weights to solve a medically relevant problem using the ChRIS platform. Our MVP is a dummy app that can demonstrate these capabilities. This app can be run on three machines. Two machines can act as workers during the learning phase, each learning from one half of the training data set. A third machine can then act as an aggregator, combining the weights from the workers. Ideally, this aggregated model will have a higher accuracy than either of the worker models. If this is the case, then our project will be considered a success.
+
+We also have some stretch goals. Ideally, we'd make a pipeline with our app that would be able to solve a problem with some important medical significance. The ultimate challenge for our project would be to create a pipeline that would be used by real medical professionals. This requires the model to be very accurate and easy to use. Medical professionals will be resistant to any changes that will affect their workflow, so we have to ensure the impact is minimal and the pipeline does not take a long time to learn.
 
 ## 6.  Release Planning:
 
