@@ -26,9 +26,10 @@ The vision statement should be specific enough that you can look at a proposed s
 
 ## 2. Users/Personas Of The Project:
 
-This section describes the principal user roles of the project together with the key characteristics of these roles. This information will inform the design and the user scenarios. A complete set of roles helps in ensuring that high-level requirements can be identified in the product backlog.
+* **Lab/Researcher (academic use)**: Runs training on their own data inside ChRIS. Contributes model updates to a central aggregator without moving raw data. They care about simple steps to start runs and seeing results.
+* **Clinical user**: Just runs the plugin on local studies and looks at results. They only care about the output quality, convenience, and speed.
+* **ChRIS operator (demo/admin)**: Spins up multiple local ChRIS instances with separate data plus one aggregator. They care about having a local demo that shows it reliably working. 
 
-Again, the description should be specific enough that you can determine whether user A, performing action B, is a member of the set of users the project is designed for.
 
 ** **
 
