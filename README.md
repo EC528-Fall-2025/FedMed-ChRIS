@@ -19,10 +19,24 @@ Project Proposal can be used during the follow-up analysis and design meetings t
 ** **
 
 ## 1.   Vision and Goals Of The Project:
+Our vision is to produce a Federated Learning workflow for medical imaging so that data never leaves its collection site. The flow will have multiple ChRIS instances train a shared model locally and exchange only model updates with a central aggregator. We will then have created a reproducible, auditable, and secure reference implementation that a hospital can run across isolated datasets.
 
-The vision section describes the final desired state of the project once the project is complete. It also specifies the key goals of the project. This section provides a context for decision-making. A shared vision among all team members can help ensuring that the solution meets the intended goals. A solid vision clarifies perspective and facilitates decision-making.
+Our Primary Goals:
+1. Deploy ≥3 ChRIS nodes + 1 aggregator (local/cloud VMs OK), each with its own dataset.
 
-The vision statement should be specific enough that you can look at a proposed solution and say either "yes, this meets the vision and goals", or "no, it does not".
+2. Integrate a federated framework (OpenFL or equivalent) with ChRIS pipelines (CUBE) to run FedAvg rounds.
+
+3. Containerize training/inference plugins (Python) with clear inputs/outputs and versioned provenance.
+
+4. Automate orchestration (script or Makefile) for bring-up, tear-down, and N training rounds.
+
+5. Security & privacy: TLS between sites; verify that no raw images or PHI traverse the network (logs/artifacts).
+
+6. Metrics: track AUC/accuracy, round time, bandwidth per round, and resource usage; export to a simple dashboard.
+
+7. Baseline comparison: show federated model within ≤5% of a centrally trained baseline on a held-out test set.
+
+8. Docs: architecture diagram, runbook, and “one-command demo” instructions.
 
 ## 2. Users/Personas Of The Project:
 
