@@ -75,7 +75,84 @@ This section discusses the minimum acceptance criteria at the end of the project
 
 ## 6.  Release Planning:
 
-Release planning section describes how the project will deliver incremental sets of features and functions in a series of releases to completion. Identification of user stories associated with iterations that will ease/guide sprint planning sessions is encouraged. Higher level details for the first iteration is expected.
+This project will be delivered across a series of 2-week sprints (iterations) from September to December. Each release will deliver functionality allowing us to validate progress with our mentor (and potentially professors).
+
+### Sprint 1 (Sept 22 – Oct 6): Environment & Baseline Setup
+
+**User stories:**
+
+As a ChRIS operator, I want to open a single ChRIS instance locally so that I can test data ingestion and pipeline execution.
+
+**Deliverables:**
+
+* Local ChRIS deployment.
+* Containerized baseline training plugin (Python) with clear inputs/outputs.
+* Documentation of setup instructions and baseline results.
+
+### Sprint 2 (Oct 7 – Oct 20): Multi-Node Deployment
+
+**User stories:**
+
+As a ChRIS operator or medical researcher, I want to deploy at least three ChRIS nodes and 1 aggregator to demo and test distributed data environments.
+
+**Deliverables:**
+
+* Deployment scripts to help for multiple ChRIS instances (VMs or containers).
+* Verification that each node can ingest its own dataset and run the baseline training plugin/app.
+* Networked aggregator stub in place to test weight passing (without any actual federated logic yet).
+
+### Sprint 3 (Oct 21 – Nov 3): Federated Learning Integration
+
+**User stories:**
+
+As a researcher, I want local model updates sent to an aggregator so that federated averaging can begin.
+
+**Deliverables:**
+
+* Integration of OpenFL with our existing ChRIS plugins/apps.
+* Federated aggregation working across multiple nodes with central aggregation.
+
+### Sprint 4 (Nov 4 – Nov 17): Security & Privacy Layer
+
+**User stories:**
+
+As a hospital IT or security stakeholder, I need peace of mind that no raw images or Protected Health Information (PHI) leaves my site.
+ 
+**Deliverables:**
+
+* TLS-secured (encrypted) communication between nodes and the aggregator.
+* Audit of logs to confirm no raw data leaves the network.
+* Early draft of documentation that outlines security configuration.
+* End-to-end proof showing model parameters exchanged, no raw data transfer.
+
+### Sprint 5 (Nov 18 – Dec 1): Metrics & Monitoring
+
+**User stories:**
+
+As a user, I want to be able to track accuracy, runtime, and bandwidth to evaluate FL effectiveness.
+
+As an operator, I want a dashboard that displays progress across epochs and other throughput metrics.
+
+**Deliverables:**
+
+* Collection of accuracy, time, projections, bandwidth, and resource usage.
+* Lightweight dashboard.
+* Maybe: Comparison or benchmark of federated model to central baseline (single site).
+
+### Sprint 6 (Dec 2 – Dec 15): Documentation & Demo Packaging
+
+**User stories:**
+
+As a clinical user, I want to easily run the demo inference through ChRIS without any computer skills required.
+
+As a demo operator or researcher, I want a reproducible setup and the necessary documentation to train and deploy my own instances of this pipeline.
+
+**Deliverables:**
+
+* Finalized single-command launch interface for end-to-end inference.
+* Architecture diagram, polished runbook, and thorough documentation.
+* Modular final pipeline and plugins/apps that enable future scalability.
+* Stretch goals if time permits (framework substitution, extended monitoring, example datasets, additional features).
 
 ** **
 
