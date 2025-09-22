@@ -131,7 +131,7 @@ As a hospital IT or security stakeholder, I need peace of mind that no raw image
 
 As a user, I want to be able to track accuracy, runtime, and bandwidth to evaluate FL effectiveness.
 
-As an operator, I want a dashboard that displays progress across epochs and other throughput metrics.
+As an operator, I want a dashboard that displays progress across epochs (FL training rounds) and other throughput metrics.
 
 **Deliverables:**
 
