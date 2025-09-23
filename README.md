@@ -49,7 +49,7 @@ Our Primary Goals:
 
 ## 3.   Scope and Features Of The Project:
 
-# In scope
+### In scope
 - Multi-node ChRIS deployment: Each node (or container image) hosts an isolated set of medical images to be trained in parallel
 
 - Central aggregation server: Receives trained models from each node and outputs combined model to each node until desired accuracy is achieved
@@ -60,7 +60,7 @@ Our Primary Goals:
 
 - Convenient orchestration: Simple process for setup, training round execution, shut-down, and clean up. There should be minimal commands used to orchestrate a complete machine learning pipeline.
 
-# Out of scope
+### Out of scope
 - Custom UI for data analysis
 
 - Advanced federated learning algorithms
