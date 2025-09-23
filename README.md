@@ -49,11 +49,18 @@ Our Primary Goals:
 
 ## 3.   Scope and Features Of The Project:
 
-The Scope places a boundary around the solution by detailing the range of features and functions of the project. This section helps to clarify the solution scope and can explicitly state what will not be delivered as well.
+# In scope
+Multi-node ChRIS deployment: Each node (or container image) hosts an isolated set of medical images to be trained in parallel
+Central aggregation server: Receives trained models from each node and outputs combined model to each node until desired accuracy is achieved
+Secure & private flow of data: Ensure that only models are being transferred between nodes and aggregators. Outputs of each node will be automatically assessed for patient data. 
+OpenFL: This federated learning framework will be integrated with the ChRIS pipeline for generalizability of training models and privacy regulations
+Convenient orchestration: Simple process for setup, training round execution, shut-down, and clean up. There should be minimal commands used to orchestrate a complete machine learning pipeline.
 
-It should be specific enough that you can determine that e.g. feature A is in-scope, while feature B is out-of-scope.
+# Out of scope
+Custom UI for data analysis
+Advanced federated learning algorithms
+Development of individual machine learning models for medical imaging
 
-** **
 
 ## 4. Solution Concept
 
