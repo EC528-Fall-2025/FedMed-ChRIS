@@ -70,11 +70,25 @@ Our Primary Goals:
 
 ## 4. Solution Concept
 
-This section provides a high-level outline of the solution.
+The project will follow a multi-step approach. Our goal is to build a machine learning model that performs well while respecting data privacy. The steps are:
+- **Stand up ChRIS instances**
+ Install Docker on two VMs to simulate two different hospitals, then clone and run miniChRIS. This gives us two reachable CUBE endpoints (each hospital has its own CUBE, the ChRIS backend API).
 
-Global Architectural Structure Of the Project:
 
-This section provides a high-level architecture or a conceptual diagram showing the scope of the solution. If wireframes or visuals have already been done, this section could also be used to show how the intended solution will look. This section also provides a walkthrough explanation of the architectural structure.
+- **Set up a secure central aggregator**
+ Deploy a central “director/aggregator” service that coordinates rounds of federated training, using OpenFL. It will use TLS (transport layer security), which is a protocol that gives encrypted connections and authentication (certificates), this ensures the traffic is encrypted and the server knows which client is connecting.
+
+
+- **Write and containerize Python training apps**
+ Develop Python training code for the local nodes (to run training loops/epochs), and containerize it so each site can run it reproducibly. The output will be a versioned docker container image that runs on both ChRIS sites and participates in OpenFL rounds. 
+
+
+- **Orchestrate federated training rounds**
+ Run multiple rounds of FedAvg: the director schedules tasks, each site trains locally, sends weight deltas, and the director aggregates and redistributes the global model. This entails defining an FL plan, starting envoys at sites, and tuning the loop. The output will be a repeatable script or ChRIS pipeline that runs x rounds end-to-end and leaves an artifacted (version of model produced at specified round) global model per round.
+
+- **Collect metrics**
+Gather accuracy, performance, and stability metrics. These metrics demonstrate that the system works without ever centralizing the data. The output will be a report with per round global metrics, per site local metrics, total runtime and network traffic. 
+
 
  <img width="1214" height="788" alt="image" src="https://github.com/user-attachments/assets/65df7f4d-8fb6-406a-9289-16185780cede" />
 
