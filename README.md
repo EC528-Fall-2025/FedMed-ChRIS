@@ -1,10 +1,6 @@
 # Federated Learning in Medical Imaging Using the ChRIS Platform
 
 ** **
-
-## Collaborators
-## Visualization of Trino Query Trees on Federated Systems
-
 ### Collaborators
 
 | Name          | Email           |
