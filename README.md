@@ -89,10 +89,6 @@ Gather accuracy, performance, and stability metrics. These metrics demonstrate t
  <img width="1214" height="788" alt="image" src="https://github.com/user-attachments/assets/65df7f4d-8fb6-406a-9289-16185780cede" />
 
 
-Design Implications and Discussion:
-
-This section discusses the implications and reasons of the design decisions made during the global architecture design.
-
 ## 5. Acceptance criteria
 
 Overall, our minimum acceptance criteria is to build an intelligent model that can utilize a large set of data from an aggregated set of weights to solve a medically relevant problem using the ChRIS platform. Our MVP is a dummy app that can demonstrate these capabilities. This app can be run on three machines. Two machines can act as workers during the learning phase, each learning from one half of the training data set. A third machine can then act as an aggregator, combining the weights from the workers. Ideally, this aggregated model will have a higher accuracy than either of the worker models. If this is the case, then our project will be considered a success.
