@@ -86,7 +86,9 @@ The project will follow a multi-step approach. Our goal is to build a machine le
 Gather accuracy, performance, and stability metrics. These metrics demonstrate that the system works without ever centralizing the data. The output will be a report with per round global metrics, per site local metrics, total runtime and network traffic. 
 
 
- <img width="1214" height="788" alt="image" src="https://github.com/user-attachments/assets/65df7f4d-8fb6-406a-9289-16185780cede" />
+<p align="center">
+<img width="100%" alt="Federated Learning Flow Chart" src="https://github.com/user-attachments/assets/0c120a77-8fad-438b-bcdf-996a4375243b" />
+</p>
 
 
 ## 5. Acceptance criteria
