@@ -19,12 +19,12 @@ def get_version(rel_path: str) -> str:
 
 
 setup(
-    name='chris-plugin-template',
+    name='FL_MNIST_Classifier_plugin',
     version=get_version('app.py'),
-    description='A ChRIS DS plugin template',
-    author='FNNDSC',
-    author_email='dev@babyMRI.org',
-    url='https://github.com/FNNDSC/python-chrisapp-template',
+    description='A Simple ChRIS plugin for MNIST Classification with Federated Learning. Used to validate Federated Learning Pipeline',
+    author='David Edelist',
+    author_email='jedelist@bu.edu',
+    url='https://github.com/jedelist/MNIST_plugin#,
     py_modules=['app'],
     install_requires=['chris_plugin'],
     license='MIT',

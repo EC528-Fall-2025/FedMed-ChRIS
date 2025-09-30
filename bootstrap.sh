@@ -15,11 +15,11 @@
 # ----------------------------------------
 
 PLUGIN_NAME="$(basename $(dirname $(realpath $0)))"  # name of current directory
-PLUGIN_TITLE='My ChRIS Plugin'
+PLUGIN_TITLE='FL_MNIST_Classifier_plugin'
 SCRIPT_NAME='commandname'
-DESCRIPTION='A ChRIS plugin to do something awesome'
-ORGANIZATION='FNNDSC'
-EMAIL='dev@babyMRI.org'
+DESCRIPTION='A Simple ChRIS plugin for MNIST Classification with Federated Learning. Used to validate Federated Learning Pipeline'
+ORGANIZATION='Boston University'
+EMAIL='jedelist@bu.edu'
 
 # Github Actions: automatically test and build your code.
 # https://github.com/FNNDSC/python-chrisapp-template/wiki/Continuous-Integration

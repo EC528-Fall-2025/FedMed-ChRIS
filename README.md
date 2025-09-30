@@ -175,3 +175,38 @@ Intructions on how to upload the plugin to _ChRIS_ can be found here:
 https://chrisproject.org/docs/tutorials/upload_plugin
 
 END README TEMPLATE -->
+
+## How to use:
+### Setup
+```bash
+python -m venv .venv_mnist && source .venv_mnist/bin/activate
+pip install -r requirements.txt
+```
+
+### Train 
+```bash
+cd MNIST_root
+python main.py train --epochs 6 --batch-size 128 --lr 1e-3 --out-dir outputs
+
+# OR GENERALLY:
+
+python main.py train --epochs 6 --batch-size 128 --lr 1e-3 --out-dir <path/to/output/directory>
+``` 
+* Note that more hyperparameters for training can be passed as command line arguments, look in main.py for more options.
+
+### Evaluate
+```bash
+cd MNIST_root
+python main.py eval --weights outputs/best.ckpt
+
+# OR GENERALLY:
+
+python main.py eval --weights <path/to/weights/best.ckpt>
+```
+
+### Predict on Single Image:
+
+```bash
+cd MNIST_root
+python main.py predict --weights outputs/best.ckpt --image <path/to/img.png>
+```

@@ -1,6 +1,7 @@
 .git/
 .github/
 .dockerignore
+.venv_mnist
 Dockerfile
 
 *~
@@ -16,3 +17,20 @@ __pycache__/
 examples/
 
 venv/
+
+# Dataset caches
+MNIST_root/data/
+
+# Training outputs
+MNIST_root/outputs/
+
+# Logs
+*.log
+
+# Checkpoints
+*.ckpt
+
+# Python caches
+__pycache__/
+*.py[cod]
+*.pyo

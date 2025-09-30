@@ -9,3 +9,17 @@ __pycache__/
 .vscode/
 
 venv/
+
+# Python virtual environment 
+.venv_mnist
+
+# Binary data
+MNIST_root/data/MNIST/raw/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Training outputs
+MNIST_root/outputs/
+*.ckpt
