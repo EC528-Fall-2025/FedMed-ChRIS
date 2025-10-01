@@ -14,6 +14,9 @@
 
 ** **
 
+## Sprint presentations
+[Sprint 1](https://drive.google.com/file/d/1YTHomhBlerSoSIfBh1ot-iieM9HAaYIk/view?usp=sharing)
+
 ## 1.   Vision and Goals Of The Project:
 Our vision is to produce a Federated Learning workflow for medical imaging so that data never leaves its collection site. The flow will have multiple ChRIS instances train a shared model locally and exchange only model updates with a central aggregator. We will then have created a reproducible, auditable, and secure reference implementation that a hospital can run across isolated datasets.
 
