@@ -21,17 +21,17 @@ def get_version(rel_path: str) -> str:
 setup(
     name='FL_MNIST_Classifier_plugin',
     version=get_version('app.py'),
-    description='A Simple ChRIS plugin for MNIST Classification with Federated Learning. Used to validate Federated Learning Pipeline',
+    description='A Simple ChRIS plugin for MNIST Classification. Used to validate Federated Learning Pipeline.',
     author='David Edelist',
     author_email='jedelist@bu.edu',
-    url='https://github.com/jedelist/MNIST_plugin,
-    py_modules=['app'],
-    install_requires=['chris_plugin'],
-    packages =  ['MINST_root'],                 # import module
+    url='https://github.com/jedelist/MNIST_plugin',
+    py_modules=['app'],                  # the ChRIS main entrypoint module app.py
+    packages=['MNIST_root'],             # MNIST package
+    install_requires=['chris_plugin==0.4.0'],
     license='MIT',
     entry_points={
         'console_scripts': [
-            'commandname = app:main'
+            'commandname = app:main'     # becomes the container CMD
         ]
     },
     classifiers=[
