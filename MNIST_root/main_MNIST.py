@@ -72,7 +72,7 @@ def _preprocess_image(path: str) -> torch.Tensor:
     img = Image.open(path).convert("L")
     return tfm(img).unsqueeze(0)  # [1,1,28,28]
 
-def main():
+def main_MNIST():
     args = parse_args()
 
     if args.cmd == "train":
@@ -116,4 +116,4 @@ def main():
         print(f"Prediction digit: {pred} (confidence: {conf:.2f}%)")
 
 if __name__ == "__main__":
-    main()
+    main_MNIST()

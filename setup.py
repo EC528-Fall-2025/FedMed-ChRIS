@@ -24,9 +24,10 @@ setup(
     description='A Simple ChRIS plugin for MNIST Classification with Federated Learning. Used to validate Federated Learning Pipeline',
     author='David Edelist',
     author_email='jedelist@bu.edu',
-    url='https://github.com/jedelist/MNIST_plugin#,
+    url='https://github.com/jedelist/MNIST_plugin,
     py_modules=['app'],
     install_requires=['chris_plugin'],
+    packages =  ['MINST_root'],                 # import module
     license='MIT',
     entry_points={
         'console_scripts': [

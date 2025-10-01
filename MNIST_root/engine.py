@@ -26,7 +26,7 @@ class Trainer:
     def train(self, train_loader, val_loader, epochs: int) -> Dict[str, list]:
         history = {"train_loss": [], "validation_loss": [], "validation_accuracy": []}
         for epoch in range(1, epochs + 1):
-            train_loss = self._train_one_epoch(train_loader, epoch, epochs)
+            train_loss = self.train_one_epoch(train_loader, epoch, epochs)
             val_loss, val_acc = self.evaluate(val_loader)
             history["train_loss"].append(train_loss)
             history["validation_loss"].append(val_loss)
@@ -38,7 +38,7 @@ class Trainer:
                 save_checkpoint(self.model, self.out_dir / "best.ckpt")
         return history
 
-    def _train_one_epoch(self, loader, epoch: int, epochs: int) -> float:
+    def train_one_epoch(self, loader, epoch: int, epochs: int) -> float:
         self.model.train()
         running = 0.0
         pbar = tqdm(loader, desc=f"Epoch {epoch}/{epochs}", leave=False)

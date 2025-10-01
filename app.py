@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from MINST_root import main
 from pathlib import Path
 from argparse import ArgumentParser, Namespace, ArgumentDefaultsHelpFormatter
 
@@ -48,6 +49,13 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
     """
 
     print(DISPLAY_TITLE)
+
+    # Goal is to link main_MNIST into this app.py so that we can still use the single point of entry in main_MNIST, 
+    # but have it called from this file since this is required for a ChRIS app.
+    # switch statement get from sub parser
+    if(options.sub_parser == "train"):
+        main.main_MNIST(train.config)
+
 
     # Typically it's easier to think of programs as operating on individual files
     # rather than directories. The helper functions provided by a ``PathMapper``
