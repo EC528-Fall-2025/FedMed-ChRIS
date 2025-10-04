@@ -1,0 +1,6 @@
+services:
+  app:
+    image: localhost/pl-example:1.0.0
+    build:
+      context: .
+      dockerfile: Dockerfile
