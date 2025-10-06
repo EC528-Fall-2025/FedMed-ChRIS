@@ -102,6 +102,7 @@ As a ChRIS operator or medical researcher, be able to run my MNIST Python classi
 
 * Containerized baseline training plugin (Python) with clear inputs/outputs.
 * Verification that ChRIS instances can ingest its own dataset and run the baseline training plugin/app.
+* Run the MNIST classifier plugin successfully on a ChRIS instance.
 
 ### Sprint 3 (Oct 15 – Oct 29): Federated Learning Integration
 
