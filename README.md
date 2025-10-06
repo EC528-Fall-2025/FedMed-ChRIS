@@ -1,66 +1,4 @@
-# _ChRIS_ Plugin Template
-
-[![test status](https://github.com/FNNDSC/python-chrisapp-template/actions/workflows/src.yml/badge.svg)](https://github.com/FNNDSC/python-chrisapp-template/actions/workflows/src.yml)
-[![MIT License](https://img.shields.io/github/license/FNNDSC/python-chrisapp-template)](LICENSE)
-
-This is a minimal template repository for _ChRIS_ plugin applications in Python.
-
-## About _ChRIS_ Plugins
-
-A _ChRIS_ plugin is a scientific data-processing software which can run anywhere all-the-same:
-in the cloud via a [web app](https://github.com/FNNDSC/ChRIS_ui/), or on your own laptop
-from the terminal. They are easy to build and easy to understand: most simply, a
-_ChRIS_ plugin is a command-line program which processes data from an input directory
-and creates data to an output directory with the usage
-`commandname [options...] inputdir/ outputdir/`.
-
-For more information, visit our website https://chrisproject.org
-
-## How to Use This Template
-
-Go to https://github.com/FNNDSC/python-chrisapp-template and click "Use this template".
-The newly created repository is ready to use right away.
-
-A script `bootstrap.sh` is provided to help fill in and rename values for your new project.
-It is optional to use.
-
-1. Edit the variables in `bootstrap.sh`
-2. Run `./bootstrap.sh`
-3. Follow the instructions it will print out
-
-## Example Plugins
-
-Here are some good, complete examples of _ChRIS_ plugins created from this template.
-
-- https://github.com/FNNDSC/pl-dcm2niix (basic command wrapper example)
-- <https://github.com/FNNDSC/pl-adapt_object_mesh> (parallelizes a command)
-- https://github.com/FNNDSC/pl-mri-preview (uses [NiBabel](https://nipy.org/nibabel/))
-- https://github.com/FNNDSC/pl-pyvista-volume (example using Python package project structure and pytest)
-- https://github.com/FNNDSC/pl-fetal-cp-surface-extract (has a good README.md)
-
-## What's Inside
-
-| Path                       | Purpose                                                                                                                                                                                                  |
-|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `app.py`                   | Main script: start editing here!                                                                                                                                                                         |
-| `tests/`                   | Unit tests                                                                                                                                                                                               |
-| `setup.py`                 | [Python project metadata and installation script](https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#setup-py)                                                        |
-| `requirements.txt`         | List of Python dependencies                                                                                                                                                                              |
-| `Dockerfile`               | [Container image build recipe](https://docs.docker.com/engine/reference/builder/)                                                                                                                        |
-| `.github/workflows/ci.yml` | "continuous integration" using [Github Actions](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions): automatic testing, building, and uploads to https://chrisstore.co |
-
-## Contributing
-
-The source code for the `main` branch of this repository is on the
-[src](https://github.com/fnndsc/python-chrisapp-template/tree/src)
-branch, which has an additional file
-[`.github/workflows/src.yml`](https://github.com/FNNDSC/python-chrisapp-template/blob/src/.github/workflows/src.yml)
-When tests pass, changes are automatically merged into `main`.
-Developers should commit to or make pull requests targeting `src`.
-Do not push directly to `main`.
-
-This is a workaround in order to do automatic testing of this template
-without including the `.github/workflows/src.yml` file in the template itself.
+# _ChRIS_ MNIST Classifier Plugin for Federated Learning Pipeline Validation
 
 <!-- BEGIN README TEMPLATE
 
@@ -176,7 +114,7 @@ https://chrisproject.org/docs/tutorials/upload_plugin
 
 END README TEMPLATE -->
 
-## How to use:
+## How to use this plugin locally:
 ### Setup
 ```bash
 python -m venv .venv_mnist && source .venv_mnist/bin/activate
@@ -186,27 +124,107 @@ pip install -r requirements.txt
 ### Train 
 ```bash
 cd MNIST_root
-python main.py train --epochs 6 --batch-size 128 --lr 1e-3 --out-dir outputs
+python main_MNIST.py train --epochs 6 --batch-size 128 --lr 1e-3 --out-dir outputs
 
 # OR GENERALLY:
 
-python main.py train --epochs 6 --batch-size 128 --lr 1e-3 --out-dir <path/to/output/directory>
+python main_MNIST.py train --epochs 6 --batch-size 128 --lr 1e-3 --out-dir <path/to/output/directory>
 ``` 
 * Note that more hyperparameters for training can be passed as command line arguments, look in main.py for more options.
 
 ### Evaluate
 ```bash
 cd MNIST_root
-python main.py eval --weights outputs/best.ckpt
+python main_MNIST.py eval --weights outputs/best.ckpt
 
 # OR GENERALLY:
 
-python main.py eval --weights <path/to/weights/best.ckpt>
+python main_MNIST.py eval --weights <path/to/weights/best.ckpt>
 ```
 
 ### Predict on Single Image:
 
 ```bash
 cd MNIST_root
-python main.py predict --weights outputs/best.ckpt --image <path/to/img.png>
+python main_MNIST.py predict --weights outputs/best.ckpt --image <path/to/img.png>
 ```
+
+## How to use as a ChRIS plugin:
+
+### 1. Setup
+```bash
+source .venv_mnist/bin/activate
+pip install -e .
+```
+Next, you want to run the following command to ensure the setup is properly working:
+
+```bash
+chrNIST --help  # Ensure this command works without throwing errors.
+```
+
+### 2. Train
+
+Ensure this training runs properly without issues before building the container.
+```bash
+mkdir in
+chrNIST --mode train --epochs 4 --batch-size 128 --lr 1e-3 . MNIST_root/outputs
+```
+
+Note that `commandname` is `chrNIST` in this plugin.
+
+### 3. Evaluate
+
+Ensure this eval properly without issues before building the container.
+```bash
+chrNIST --mode eval --weights MNIST_root/outputs/best.ckpt . MNIST_root/outputs
+```
+
+### 4. Build docker image
+
+From the plugin's root directory, run:
+```bash
+docker build -t jedelist/mnist-chris:latest .
+
+# Ensure the following help command runs properly in the container without throwing errors
+docker run --rm jedelist/mnist-chris:latest chrNIST --help
+```
+
+### 5. Run training inside a container 
+
+```bash
+docker run --rm \
+  -e OMP_NUM_THREADS=4 -e MKL_NUM_THREADS=4 \
+  -v "$PWD/in:/in:ro" \
+  -v "$PWD/MNIST_root/outputs:/out" \
+  jedelist/mnist-chris:latest \
+  chrNIST --mode train --epochs 3 --batch-size 64 --lr 1e-3 --num-workers 0 \
+  /in /out
+```
+
+Note: If you want to use AMP, just leave the argument empty, it will be on by default. If you're not using CUDA and don't want to use AMP, also leave it blank. PyTorch will automatically disable AMP (mixed precision). I cannot get the CL argument to behave well- so for now this will have to do.
+
+### 6. Evaluate trained model inside container
+
+```bash
+docker run --rm \
+  -e OMP_NUM_THREADS=4 -e MKL_NUM_THREADS=4 \
+  -v "$PWD/in:/in:ro" \
+  -v "$PWD/MNIST_root/outputs:/out" \
+  jedelist/mnist-chris:latest \
+  chrNIST --mode eval --weights /out/best.ckpt --num-workers 0 \
+  /in /out
+```
+
+### 7. Predict on images (PNG/JPG)
+
+```bash
+# Example: Put a PNG to ./in/digit.png
+docker run --rm \
+  -v "$PWD/in:/in:ro" \
+  -v "$PWD/MNIST_root/outputs:/out" \
+  jedelist/mnist-chris:latest \
+  chrNIST --mode predict --weights /out/best.ckpt --image /in/digit.png \
+  /in /out
+```
+
+Note: To cleanup unused all unused containers and images, run: `docker system prune -a`

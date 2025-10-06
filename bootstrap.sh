@@ -16,7 +16,7 @@
 
 PLUGIN_NAME="$(basename $(dirname $(realpath $0)))"  # name of current directory
 PLUGIN_TITLE='FL_MNIST_Classifier_plugin'
-SCRIPT_NAME='commandname'
+SCRIPT_NAME='chrNIST'
 DESCRIPTION='A Simple ChRIS plugin for MNIST Classification with Federated Learning. Used to validate Federated Learning Pipeline'
 ORGANIZATION='Boston University'
 EMAIL='jedelist@bu.edu'
@@ -122,7 +122,7 @@ function replace_in_all () {
     -exec sed -i -e "s/$1/$2/g" '{}' \;
 }
 
-replace_in_all commandname "$SCRIPT_NAME"
+replace_in_all chrNIST "$SCRIPT_NAME"
 replace_in_all pl-appname "$PLUGIN_NAME"
 replace_in_all 'dev@babyMRI.org' "$EMAIL"
 replace_in_all FNNDSC "$ORGANIZATION"

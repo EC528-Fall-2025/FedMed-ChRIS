@@ -1,3 +1,8 @@
+'''
+This is the main script for offline testing only. It does not run with the plugin or in the container.
+Use this script only for testing the actual MNIST classifier source code. Otherwise, this file is deprecated.
+'''
+
 import argparse
 from pathlib import Path
 from typing import Tuple
@@ -6,12 +11,15 @@ import torch
 from torchvision import transforms
 from PIL import Image
 
-from config import TrainConfig, EvalConfig
-from data import mnist_loaders
-from engine import train_model
-from models import SimpleCNN
-from utils import get_device, load_checkpoint, MNIST_MEAN_STD
+from .config import TrainConfig, EvalConfig
+from .data import mnist_loaders
+from .engine import train_model
+from .models import SimpleCNN
+from .utils import get_device, load_checkpoint, MNIST_MEAN_STD, _eval, preprocess_image
 
+
+# I defined a new parser in the app.py ChRIS plugin entry-point. I left this here for reference, but I also made
+# some changes to the new one in app.py. This is deprecated
 def parse_args():
     p = argparse.ArgumentParser(description="MNIST classifier")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -43,36 +51,12 @@ def parse_args():
 
     return p.parse_args()
 
-def _eval(model: torch.nn.Module, loader, device: torch.device) -> Tuple[float, float]:
-    model.eval()                                # Set to eval mode
-    crit = torch.nn.CrossEntropyLoss()
-    total_loss, correct, total = 0.0, 0, 0
-    with torch.no_grad():                       # No model updates
-        for x, y in loader:
-            x, y = x.to(device), y.to(device)
-            logits = model(x)                   # Softmax input logit
-            loss = crit(logits, y)
-            total_loss += loss.item() * x.size(0)
-            pred = logits.argmax(1)
-            correct += (pred == y).sum().item()
-            total += y.size(0)
-    avg_loss = total_loss / total
-    acc = 100.0 * correct / total
-    return avg_loss, acc
-
-# Taken from online forum, standard conversion.
-def _preprocess_image(path: str) -> torch.Tensor:
-    mean, std = MNIST_MEAN_STD
-    tfm = transforms.Compose([
-        transforms.Grayscale(num_output_channels=1),
-        transforms.Resize((28, 28)),
-        transforms.ToTensor(),
-        transforms.Normalize((mean,), (std,))
-    ])
-    img = Image.open(path).convert("L")
-    return tfm(img).unsqueeze(0)  # [1,1,28,28]
-
+# This function isn't called in the ChRIS plugin; however, I kept it here for isolated testing of Training
 def main_MNIST():
+    '''
+    This function isn't called in the ChRIS plugin; however, I kept it here for isolated testing of Training.
+    Look in app.py for most recent ChRIS plugin code.
+    '''
     args = parse_args()
 
     if args.cmd == "train":
@@ -107,7 +91,7 @@ def main_MNIST():
         device = get_device(args.device)
         model = SimpleCNN().to(device)
         load_checkpoint(model, args.weights, map_location=device)
-        x = _preprocess_image(args.image).to(device)
+        x = preprocess_image(args.image).to(device)
         with torch.no_grad():
             logits = model(x)
             probs = torch.softmax(logits, dim=1).squeeze(0)

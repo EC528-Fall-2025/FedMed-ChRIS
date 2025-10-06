@@ -23,6 +23,8 @@ MNIST_root/data/
 
 # Training outputs
 MNIST_root/outputs/
+*.pt
+*.pth
 
 # Logs
 *.log
@@ -34,3 +36,6 @@ MNIST_root/outputs/
 __pycache__/
 *.py[cod]
 *.pyo
+
+in/
+out/

@@ -25,13 +25,13 @@ setup(
     author='David Edelist',
     author_email='jedelist@bu.edu',
     url='https://github.com/jedelist/MNIST_plugin',
-    py_modules=['app'],                  # the ChRIS main entrypoint module app.py
-    packages=['MNIST_root'],             # MNIST package
+    py_modules=['app'],                  # the ChRIS main entrypoint app.py
+    packages=['MNIST_root'],             # MNIST package (src)
     install_requires=['chris_plugin==0.4.0'],
     license='MIT',
     entry_points={
         'console_scripts': [
-            'commandname = app:main'     # becomes the container CMD
+            'chrNIST = app:main'     # becomes the container CMD
         ]
     },
     classifiers=[

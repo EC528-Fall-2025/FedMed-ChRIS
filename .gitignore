@@ -14,7 +14,7 @@ venv/
 .venv_mnist
 
 # Binary data
-MNIST_root/data/MNIST/raw/
+MNIST_root/data/
 
 # Python cache
 __pycache__/

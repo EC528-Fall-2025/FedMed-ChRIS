@@ -3,11 +3,12 @@ from typing import Dict, Tuple
 import torch
 from torch import nn
 from torch.optim import AdamW
-from torch.cuda.amp import autocast, GradScaler
+#from torch.cuda.amp import GradScaler
+from torch.amp import autocast, GradScaler
 from tqdm import tqdm
 from pathlib import Path
 
-from utils import get_device, set_seed, accuracy, save_checkpoint
+from .utils import get_device, set_seed, accuracy, save_checkpoint
 
 # Values in the config are set by calling main.py with CL arguments (specified by ChRIS documentation)
 class Trainer:
@@ -45,7 +46,7 @@ class Trainer:
         for x, y in pbar:
             x, y = x.to(self.device, non_blocking=True), y.to(self.device, non_blocking=True)
             self.optimizer.zero_grad(set_to_none=True)
-            with autocast(enabled=self.amp):
+            with autocast(device_type=self.device.type, enabled=self.amp):
                 logits = self.model(x)
                 loss = self.criterion(logits, y)
             self.scaler.scale(loss).backward()
@@ -62,7 +63,7 @@ class Trainer:
         total_loss, correct, total = 0.0, 0, 0
         for x, y in loader:
             x, y = x.to(self.device, non_blocking=True), y.to(self.device, non_blocking=True)
-            with autocast(enabled=self.amp):
+            with autocast(device_type=self.device.type, enabled=self.amp):
                 logits = self.model(x)
                 loss = self.criterion(logits, y)
             total_loss += loss.item() * x.size(0)
