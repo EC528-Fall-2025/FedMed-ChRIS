@@ -83,7 +83,7 @@ This project will be delivered across a series of 2-week sprints (iterations) fr
 
 As a ChRIS operator, I want to open a single ChRIS instance locally.
 
-As a researcher, I want to be able to train and run inference on the MNIST handwitten digits dataset locally in a standard Python environment. 
+As a researcher, I want to be able to train and run inference on the MNIST handwritten digits dataset locally in a standard Python environment. 
 
 **Deliverables:**
 
@@ -124,16 +124,16 @@ As a ChRIS operator or medical researcher, I want to deploy at least three ChRIS
 
 As a hospital IT or security stakeholder, I need peace of mind that no raw images or Protected Health Information (PHI) leaves my site.
 
-As clinical researcher or developer, I need at least 2 nodes to be reliably sharing weights along with proper central aggregation computations at the aggregator server.
+As a clinical researcher or developer, I need at least 2 nodes to be reliably sharing weights along with proper central aggregation computations at the aggregator server.
  
 **Deliverables:**
 
-* TLS-secured (encrypted) communication between nodes and the aggregator (migth be free with OpenFL).
+* TLS-secured (encrypted) communication between nodes and the aggregator (might be free with OpenFL).
 * Federated aggregation working across at least two nodes with central aggregation.
 * Deployment scripts to help for multiple ChRIS instances.
 * Early draft of documentation that FL setup and ML plugin design.
 
-### Sprint 5 (Nov 12 – Dec 26): Metrics & Monitoring
+### Sprint 5 (Nov 12 – Nov 26): Metrics & Monitoring
 
 **User stories:**
 
