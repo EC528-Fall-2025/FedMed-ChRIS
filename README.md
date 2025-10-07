@@ -95,7 +95,7 @@ As a researcher, I want to be able to train and run inference on the MNIST handw
 
 **User stories:**
 
-As a ChRIS operator or medical researcher, be able to run my MNIST Python classifier ChRIS plugin on my local instance.
+As a ChRIS operator or medical researcher, I want to be able to run my MNIST Python classifier ChRIS plugin on my local instance.
 
 **Deliverables:**
 
