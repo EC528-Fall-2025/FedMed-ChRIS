@@ -104,69 +104,80 @@ We also have some stretch goals. Ideally, we'd make a pipeline with our app that
 
 This project will be delivered across a series of 2-week sprints (iterations) from September to December. Each release will deliver functionality allowing us to validate progress with our mentor (and potentially professors).
 
-### Sprint 1 (Sept 22 – Oct 6): Environment & Baseline Setup
+### Sprint 1 (Sept 22 – Oct 1): Environment & Baseline Setup
 
 **User stories:**
 
-As a ChRIS operator, I want to open a single ChRIS instance locally so that I can test data ingestion and pipeline execution.
+As a ChRIS operator, I want to open a single ChRIS instance locally.
+
+As a researcher, I want to be able to train and run inference on the MNIST handwritten digits dataset locally in a standard Python environment. 
 
 **Deliverables:**
 
-* Local ChRIS deployment.
-* Containerized baseline training plugin (Python) with clear inputs/outputs.
+* Local ChRIS or miniChRIS deployment.
+* Functional training, testing and inference Python setup locally (not a plugin yet). 
 * Documentation of setup instructions and baseline results.
 
-### Sprint 2 (Oct 7 – Oct 20): Multi-Node Deployment
+### Sprint 2 (Oct 1 – Oct 15): Multi-Node Deployment
 
 **User stories:**
 
-As a ChRIS operator or medical researcher, I want to deploy at least three ChRIS nodes and 1 aggregator to demo and test distributed data environments.
+As a ChRIS operator or medical researcher, I want to be able to run my MNIST Python classifier ChRIS plugin on my local instance.
 
 **Deliverables:**
 
-* Deployment scripts to help for multiple ChRIS instances (VMs or containers).
-* Verification that each node can ingest its own dataset and run the baseline training plugin/app.
-* Networked aggregator stub in place to test weight passing (without any actual federated logic yet).
 
-### Sprint 3 (Oct 21 – Nov 3): Federated Learning Integration
+* Containerized baseline training plugin (Python) with clear inputs/outputs.
+* Verification that ChRIS instances can ingest its own dataset and run the baseline training plugin/app.
+* Run the MNIST classifier plugin successfully on a ChRIS instance.
+
+### Sprint 3 (Oct 15 – Oct 29): Federated Learning Integration
 
 **User stories:**
 
-As a researcher, I want local model updates sent to an aggregator so that federated averaging can begin.
+As a researcher, I want local model updates sent to an aggregator server securely and reliably.
+
+As a ChRIS operator or medical researcher, I want to deploy at least three ChRIS nodes and 1 aggregator to demo and test the reliability of weights passing to the aggregator server.
 
 **Deliverables:**
 
 * Integration of OpenFL with our existing ChRIS plugins/apps.
-* Federated aggregation working across multiple nodes with central aggregation.
+* Networked aggregator stub in place to test weight passing (without any actual federated logic yet).
+* End-to-end demo showing model weights exchanged reliably, no raw data transfer.
 
-### Sprint 4 (Nov 4 – Nov 17): Security & Privacy Layer
+### Sprint 4 (Oct 29 – Nov 12): Security & Privacy Layer
 
 **User stories:**
 
 As a hospital IT or security stakeholder, I need peace of mind that no raw images or Protected Health Information (PHI) leaves my site.
+
+As a clinical researcher or developer, I need at least 2 nodes to be reliably sharing weights along with proper central aggregation computations at the aggregator server.
  
 **Deliverables:**
 
-* TLS-secured (encrypted) communication between nodes and the aggregator.
-* Audit of logs to confirm no raw data leaves the network.
-* Early draft of documentation that outlines security configuration.
-* End-to-end proof showing model parameters exchanged, no raw data transfer.
+* TLS-secured (encrypted) communication between nodes and the aggregator (might be free with OpenFL).
+* Federated aggregation working across at least two nodes with central aggregation.
+* Deployment scripts to help for multiple ChRIS instances.
+* Early draft of documentation that FL setup and ML plugin design.
 
-### Sprint 5 (Nov 18 – Dec 1): Metrics & Monitoring
+### Sprint 5 (Nov 12 – Nov 26): Metrics & Monitoring
 
 **User stories:**
 
+As a medical practitioner or researcher, I want to be able to train a model on MNIST dataset using FL across 3 nodes and one aggregator server.
+
 As a user, I want to be able to track accuracy, runtime, and bandwidth to evaluate FL effectiveness.
 
-As an operator, I want a dashboard that displays progress across epochs (FL training rounds) and other throughput metrics.
+As an operator, I want a lightweight dashboard that displays progress across epochs (FL training rounds).
 
 **Deliverables:**
 
-* Collection of accuracy, time, projections, bandwidth, and resource usage.
-* Lightweight dashboard.
-* Maybe: Comparison or benchmark of federated model to central baseline (single site).
+* Federated learning and aggregation reliable and functional with MNIST dataset across at least 3 nodes and one aggregation server; fully integrated with ChRIS.
+* Lightweight dashboard for training metrics monitoring (accuracy, time, projections, bandwidth, and resource usage).
+* Audit of logs to confirm no raw data leaves the network.
+* Draft of documentation that outlines security and pipeline configuration.
 
-### Sprint 6 (Dec 2 – Dec 15): Documentation & Demo Packaging
+### Sprint 6 (Nov 26 – Dec 10): Documentation & Demo Packaging
 
 **User stories:**
 
@@ -176,9 +187,10 @@ As a demo operator or researcher, I want a reproducible setup and the necessary 
 
 **Deliverables:**
 
-* Finalized single-command launch interface for end-to-end inference.
+* Finalized launch interface for end-to-end inference.
 * Architecture diagram, polished runbook, and thorough documentation.
 * Modular final pipeline and plugins/apps that enable future scalability.
 * Stretch goals if time permits (framework substitution, extended monitoring, example datasets, additional features).
+* Maybe: Comparison or benchmark of federated model to central baseline (single site).
 
 ** **
