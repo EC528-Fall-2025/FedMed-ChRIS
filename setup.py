@@ -19,18 +19,19 @@ def get_version(rel_path: str) -> str:
 
 
 setup(
-    name='FedMed-testing',
+    name='FL_MNIST_Classifier_plugin',
     version=get_version('app.py'),
-    description='A ChRIS DS plugin template',
-    author='FNNDSC',
-    author_email='dev@babyMRI.org',
-    url='https://github.com/FNNDSC/python-chrisapp-template',
-    py_modules=['app'],
-    install_requires=['chris_plugin'],
+    description='A Simple ChRIS plugin for MNIST Classification. Used to validate Federated Learning Pipeline.',
+    author='David Edelist',
+    author_email='jedelist@bu.edu',
+    url='https://github.com/jedelist/MNIST_plugin',
+    py_modules=['app'],                  # the ChRIS main entrypoint app.py
+    packages=['MNIST_root'],             # MNIST package (src)
+    install_requires=['chris_plugin==0.4.0'],
     license='MIT',
     entry_points={
         'console_scripts': [
-            'commandname = app:main'
+            'chrNIST = app:main'     # becomes the container CMD
         ]
     },
     classifiers=[

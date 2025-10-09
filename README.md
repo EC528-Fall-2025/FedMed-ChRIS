@@ -1,196 +1,230 @@
-# Federated Learning in Medical Imaging Using the ChRIS Platform
+# _ChRIS_ MNIST Classifier Plugin for Federated Learning Pipeline Validation
 
-** **
-### Collaborators
+<!-- BEGIN README TEMPLATE
 
-| Name          | Email           |
-|---------------|-----------------|
-| Amado Diallo | [amadod@bu.edu](mailto:amadod@bu.edu) |
-| David Edelisr  | [jedelist@bu.edu](mailto:jedelist@bu.edu) |
-| Julie Green | [jugreen@bu.edu](mailto:jugreen@bu.edu) |
-| Matthew Hendsch    | [mhendsch@bu.edu](mailto:mhendsch@bu.edu) |
-| Anisa Qureshi    | [anisaqu@bu.edu](mailto:anisaqu@bu.edu) |
-| Ryan Smith    | [rpsmith@bu.edu](mailto:rpsmith@bu.edu) |
+# ChRIS Plugin Title
 
-** **
+[![Version](https://img.shields.io/docker/v/fnndsc/pl-appname?sort=semver)](https://hub.docker.com/r/fnndsc/pl-appname)
+[![MIT License](https://img.shields.io/github/license/fnndsc/pl-appname)](https://github.com/FNNDSC/pl-appname/blob/main/LICENSE)
+[![ci](https://github.com/FNNDSC/pl-appname/actions/workflows/ci.yml/badge.svg)](https://github.com/FNNDSC/pl-appname/actions/workflows/ci.yml)
 
-## Sprint presentations
-[Sprint 1](https://drive.google.com/file/d/1YTHomhBlerSoSIfBh1ot-iieM9HAaYIk/view?usp=sharing)
+`pl-appname` is a [_ChRIS_](https://chrisproject.org/)
+_ds_ plugin which takes in ...  as input files and
+creates ... as output files.
 
-## 1.   Vision and Goals Of The Project:
-Our vision is to produce a Federated Learning workflow for medical imaging so that data never leaves its collection site. The flow will have multiple ChRIS instances train a shared model locally and exchange only model updates with a central aggregator. We will then have created a reproducible, auditable, and secure reference implementation that a hospital can run across isolated datasets.
+## Abstract
 
-Our Primary Goals:
-1. Deploy ≥3 ChRIS nodes + 1 aggregator (local/cloud VMs OK), each with its own dataset.
+...
 
-2. Integrate a federated framework (OpenFL or equivalent) with ChRIS pipelines (CUBE) to run FedAvg rounds.
+## Installation
 
-3. Containerize training/inference plugins (Python) with clear inputs/outputs and versioned provenance.
+`pl-appname` is a _[ChRIS](https://chrisproject.org/) plugin_, meaning it can
+run from either within _ChRIS_ or the command-line.
 
-4. Automate orchestration (script or Makefile) for bring-up, tear-down, and N training rounds.
+## Local Usage
 
-5. Security & privacy: TLS between sites; verify that no raw images or PHI traverse the network (logs/artifacts).
+To get started with local command-line usage, use [Apptainer](https://apptainer.org/)
+(a.k.a. Singularity) to run `pl-appname` as a container:
 
-6. Metrics: track AUC/accuracy, round time, bandwidth per round, and resource usage; export to a simple dashboard.
+```shell
+apptainer exec docker://fnndsc/pl-appname commandname [--args values...] input/ output/
+```
 
-7. Baseline comparison: show federated model within ≤5% of a centrally trained baseline on a held-out test set.
+To print its available options, run:
 
-8. Docs: architecture diagram, runbook, and “one-command demo” instructions.
+```shell
+apptainer exec docker://fnndsc/pl-appname commandname --help
+```
 
-## 2. Users/Personas Of The Project:
+## Examples
 
-* **Lab/Researcher (academic use)**: Runs training on their own data inside ChRIS. Contributes model updates to a central aggregator without moving raw data. They care about simple steps to start runs and seeing results.
-* **Clinical user**: Just runs the plugin on local studies and looks at results. They only care about the output quality, convenience, and speed.
-* **ChRIS operator (demo/admin)**: Spins up multiple local ChRIS instances with separate data plus one aggregator. They care about having a local demo that shows it reliably working. 
+`commandname` requires two positional arguments: a directory containing
+input data, and a directory where to create output data.
+First, create the input directory and move input data into it.
 
+```shell
+mkdir incoming/ outgoing/
+mv some.dat other.dat incoming/
+apptainer exec docker://fnndsc/pl-appname:latest commandname [--args] incoming/ outgoing/
+```
 
-** **
+## Development
 
-## 3.   Scope and Features Of The Project:
+Instructions for developers.
 
-### In scope
-- Multi-node ChRIS deployment: Each node (or container image) hosts an isolated set of medical images to be trained in parallel
+### Building
 
-- Central aggregation server: Receives trained models from each node and outputs combined model to each node until desired accuracy is achieved
+Build a local container image:
 
-- Secure & private flow of data: Ensure that only models are being transferred between nodes and aggregators. Outputs of each node will be automatically assessed for patient data. 
+```shell
+docker build -t localhost/fnndsc/pl-appname .
+```
 
-- OpenFL: This federated learning framework will be integrated with the ChRIS pipeline for generalizability of training models and privacy regulations
+### Running
 
-- Convenient orchestration: Simple process for setup, training round execution, shut-down, and clean up. There should be minimal commands used to orchestrate a complete machine learning pipeline.
+Mount the source code `app.py` into a container to try out changes without rebuild.
 
-### Out of scope
-- Custom UI for data analysis
+```shell
+docker run --rm -it --userns=host -u $(id -u):$(id -g) \
+    -v $PWD/app.py:/usr/local/lib/python3.12/site-packages/app.py:ro \
+    -v $PWD/in:/incoming:ro -v $PWD/out:/outgoing:rw -w /outgoing \
+    localhost/fnndsc/pl-appname commandname /incoming /outgoing
+```
 
-- Advanced federated learning algorithms
-  
-- Development of individual machine learning models for medical imaging
+### Testing
 
+Run unit tests using `pytest`.
+It's recommended to rebuild the image to ensure that sources are up-to-date.
+Use the option `--build-arg extras_require=dev` to install extra dependencies for testing.
 
-## 4. Solution Concept
+```shell
+docker build -t localhost/fnndsc/pl-appname:dev --build-arg extras_require=dev .
+docker run --rm -it localhost/fnndsc/pl-appname:dev pytest
+```
 
-The project will follow a multi-step approach. Our goal is to build a machine learning model that performs well while respecting data privacy. The steps are:
-- **Stand up ChRIS instances**
- Install Docker on two VMs to simulate two different hospitals, then clone and run miniChRIS. This gives us two reachable CUBE endpoints (each hospital has its own CUBE, the ChRIS backend API).
+## Release
 
+Steps for release can be automated by [Github Actions](.github/workflows/ci.yml).
+This section is about how to do those steps manually.
 
-- **Set up a secure central aggregator**
- Deploy a central “director/aggregator” service that coordinates rounds of federated training, using OpenFL. It will use TLS (transport layer security), which is a protocol that gives encrypted connections and authentication (certificates), this ensures the traffic is encrypted and the server knows which client is connecting.
+### Increase Version Number
 
+Increase the version number in `setup.py` and commit this file.
 
-- **Write and containerize Python training apps**
- Develop Python training code for the local nodes (to run training loops/epochs), and containerize it so each site can run it reproducibly. The output will be a versioned docker container image that runs on both ChRIS sites and participates in OpenFL rounds. 
+### Push Container Image
 
+Build and push an image tagged by the version. For example, for version `1.2.3`:
 
-- **Orchestrate federated training rounds**
- Run multiple rounds of FedAvg: the director schedules tasks, each site trains locally, sends weight deltas, and the director aggregates and redistributes the global model. This entails defining an FL plan, starting envoys at sites, and tuning the loop. The output will be a repeatable script or ChRIS pipeline that runs x rounds end-to-end and leaves an artifacted (version of model produced at specified round) global model per round.
+```
+docker build -t docker.io/fnndsc/pl-appname:1.2.3 .
+docker push docker.io/fnndsc/pl-appname:1.2.3
+```
 
-- **Collect metrics**
-Gather accuracy, performance, and stability metrics. These metrics demonstrate that the system works without ever centralizing the data. The output will be a report with per round global metrics, per site local metrics, total runtime and network traffic. 
+### Get JSON Representation
 
+Run [`chris_plugin_info`](https://github.com/FNNDSC/chris_plugin#usage)
+to produce a JSON description of this plugin, which can be uploaded to _ChRIS_.
 
-<p align="center">
-<img width="100%" alt="Federated Learning Flow Chart" src="https://github.com/user-attachments/assets/0c120a77-8fad-438b-bcdf-996a4375243b" />
-</p>
+```shell
+docker run --rm docker.io/fnndsc/pl-appname:1.2.3 chris_plugin_info -d docker.io/fnndsc/pl-appname:1.2.3 > chris_plugin_info.json
+```
 
+Intructions on how to upload the plugin to _ChRIS_ can be found here:
+https://chrisproject.org/docs/tutorials/upload_plugin
 
-## 5. Acceptance criteria
+END README TEMPLATE -->
 
-Overall, our minimum acceptance criteria is to build an intelligent model that can utilize a large set of data from an aggregated set of weights to solve a medically relevant problem using the ChRIS platform. Our MVP is a dummy app that can demonstrate these capabilities. This app can be run on three machines. Two machines can act as workers during the learning phase, each learning from one half of the training data set. A third machine can then act as an aggregator, combining the weights from the workers. Ideally, this aggregated model will have a higher accuracy than either of the worker models. If this is the case, then our project will be considered a success.
+## How to use this plugin locally:
+### Setup
+```bash
+python -m venv .venv_mnist && source .venv_mnist/bin/activate
+pip install -r requirements.txt
+```
 
-We also have some stretch goals. Ideally, we'd make a pipeline with our app that would be able to solve a problem with some important medical significance. The ultimate challenge for our project would be to create a pipeline that would be used by real medical professionals. This requires the model to be very accurate and easy to use. Medical professionals will be resistant to any changes that will affect their workflow, so we have to ensure the impact is minimal and the pipeline does not take a long time to learn.
+### Train 
+```bash
+cd MNIST_root
+python main_MNIST.py train --epochs 6 --batch-size 128 --lr 1e-3 --out-dir outputs
 
-## 6.  Release Planning:
+# OR GENERALLY:
 
-This project will be delivered across a series of 2-week sprints (iterations) from September to December. Each release will deliver functionality allowing us to validate progress with our mentor (and potentially professors).
+python main_MNIST.py train --epochs 6 --batch-size 128 --lr 1e-3 --out-dir <path/to/output/directory>
+``` 
+* Note that more hyperparameters for training can be passed as command line arguments, look in main.py for more options.
 
-### Sprint 1 (Sept 22 – Oct 1): Environment & Baseline Setup
+### Evaluate
+```bash
+cd MNIST_root
+python main_MNIST.py eval --weights outputs/best.ckpt
 
-**User stories:**
+# OR GENERALLY:
 
-As a ChRIS operator, I want to open a single ChRIS instance locally.
+python main_MNIST.py eval --weights <path/to/weights/best.ckpt>
+```
 
-As a researcher, I want to be able to train and run inference on the MNIST handwritten digits dataset locally in a standard Python environment. 
+### Predict on Single Image:
 
-**Deliverables:**
+```bash
+cd MNIST_root
+python main_MNIST.py predict --weights outputs/best.ckpt --image <path/to/img.png>
+```
 
-* Local ChRIS or miniChRIS deployment.
-* Functional training, testing and inference Python setup locally (not a plugin yet). 
-* Documentation of setup instructions and baseline results.
+## How to use as a ChRIS plugin:
 
-### Sprint 2 (Oct 1 – Oct 15): Multi-Node Deployment
+### 1. Setup
+```bash
+source .venv_mnist/bin/activate
+pip install -e .
+```
+Next, you want to run the following command to ensure the setup is properly working:
 
-**User stories:**
+```bash
+chrNIST --help  # Ensure this command works without throwing errors.
+```
 
-As a ChRIS operator or medical researcher, I want to be able to run my MNIST Python classifier ChRIS plugin on my local instance.
+### 2. Train
 
-**Deliverables:**
+Ensure this training runs properly without issues before building the container.
+```bash
+mkdir in
+chrNIST --mode train --epochs 4 --batch-size 128 --lr 1e-3 . MNIST_root/outputs
+```
 
+Note that `commandname` is `chrNIST` in this plugin.
 
-* Containerized baseline training plugin (Python) with clear inputs/outputs.
-* Verification that ChRIS instances can ingest its own dataset and run the baseline training plugin/app.
-* Run the MNIST classifier plugin successfully on a ChRIS instance.
+### 3. Evaluate
 
-### Sprint 3 (Oct 15 – Oct 29): Federated Learning Integration
+Ensure this eval properly without issues before building the container.
+```bash
+chrNIST --mode eval --weights MNIST_root/outputs/best.ckpt . MNIST_root/outputs
+```
 
-**User stories:**
+### 4. Build docker image
 
-As a researcher, I want local model updates sent to an aggregator server securely and reliably.
+From the plugin's root directory, run:
+```bash
+docker build -t jedelist/mnist-chris:latest .
 
-As a ChRIS operator or medical researcher, I want to deploy at least three ChRIS nodes and 1 aggregator to demo and test the reliability of weights passing to the aggregator server.
+# Ensure the following help command runs properly in the container without throwing errors
+docker run --rm jedelist/mnist-chris:latest chrNIST --help
+```
 
-**Deliverables:**
+### 5. Run training inside a container 
 
-* Integration of OpenFL with our existing ChRIS plugins/apps.
-* Networked aggregator stub in place to test weight passing (without any actual federated logic yet).
-* End-to-end demo showing model weights exchanged reliably, no raw data transfer.
+```bash
+docker run --rm \
+  -e OMP_NUM_THREADS=4 -e MKL_NUM_THREADS=4 \
+  -v "$PWD/in:/in:ro" \
+  -v "$PWD/MNIST_root/outputs:/out" \
+  jedelist/mnist-chris:latest \
+  chrNIST --mode train --epochs 3 --batch-size 64 --lr 1e-3 --num-workers 0 \
+  /in /out
+```
 
-### Sprint 4 (Oct 29 – Nov 12): Security & Privacy Layer
+Note: If you want to use AMP, just leave the argument empty, it will be on by default. If you're not using CUDA and don't want to use AMP, also leave it blank. PyTorch will automatically disable AMP (mixed precision). I cannot get the CL argument to behave well- so for now this will have to do.
 
-**User stories:**
+### 6. Evaluate trained model inside container
 
-As a hospital IT or security stakeholder, I need peace of mind that no raw images or Protected Health Information (PHI) leaves my site.
+```bash
+docker run --rm \
+  -e OMP_NUM_THREADS=4 -e MKL_NUM_THREADS=4 \
+  -v "$PWD/in:/in:ro" \
+  -v "$PWD/MNIST_root/outputs:/out" \
+  jedelist/mnist-chris:latest \
+  chrNIST --mode eval --weights /out/best.ckpt --num-workers 0 \
+  /in /out
+```
 
-As a clinical researcher or developer, I need at least 2 nodes to be reliably sharing weights along with proper central aggregation computations at the aggregator server.
- 
-**Deliverables:**
+### 7. Predict on images (PNG/JPG)
 
-* TLS-secured (encrypted) communication between nodes and the aggregator (might be free with OpenFL).
-* Federated aggregation working across at least two nodes with central aggregation.
-* Deployment scripts to help for multiple ChRIS instances.
-* Early draft of documentation that FL setup and ML plugin design.
+```bash
+# Example: Put a PNG to ./in/digit.png
+docker run --rm \
+  -v "$PWD/in:/in:ro" \
+  -v "$PWD/MNIST_root/outputs:/out" \
+  jedelist/mnist-chris:latest \
+  chrNIST --mode predict --weights /out/best.ckpt --image /in/digit.png \
+  /in /out
+```
 
-### Sprint 5 (Nov 12 – Nov 26): Metrics & Monitoring
-
-**User stories:**
-
-As a medical practitioner or researcher, I want to be able to train a model on MNIST dataset using FL across 3 nodes and one aggregator server.
-
-As a user, I want to be able to track accuracy, runtime, and bandwidth to evaluate FL effectiveness.
-
-As an operator, I want a lightweight dashboard that displays progress across epochs (FL training rounds).
-
-**Deliverables:**
-
-* Federated learning and aggregation reliable and functional with MNIST dataset across at least 3 nodes and one aggregation server; fully integrated with ChRIS.
-* Lightweight dashboard for training metrics monitoring (accuracy, time, projections, bandwidth, and resource usage).
-* Audit of logs to confirm no raw data leaves the network.
-* Draft of documentation that outlines security and pipeline configuration.
-
-### Sprint 6 (Nov 26 – Dec 10): Documentation & Demo Packaging
-
-**User stories:**
-
-As a clinical user, I want to easily run the demo inference through ChRIS without any computer skills required.
-
-As a demo operator or researcher, I want a reproducible setup and the necessary documentation to train and deploy my own instances of this pipeline.
-
-**Deliverables:**
-
-* Finalized launch interface for end-to-end inference.
-* Architecture diagram, polished runbook, and thorough documentation.
-* Modular final pipeline and plugins/apps that enable future scalability.
-* Stretch goals if time permits (framework substitution, extended monitoring, example datasets, additional features).
-* Maybe: Comparison or benchmark of federated model to central baseline (single site).
-
-** **
+Note: To cleanup unused all unused containers and images, run: `docker system prune -a`

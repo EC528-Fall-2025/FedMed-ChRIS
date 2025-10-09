@@ -15,11 +15,11 @@
 # ----------------------------------------
 
 PLUGIN_NAME="$(basename $(dirname $(realpath $0)))"  # name of current directory
-PLUGIN_TITLE='My ChRIS Plugin'
-SCRIPT_NAME='commandname'
-DESCRIPTION='A ChRIS plugin to do something awesome'
-ORGANIZATION='FNNDSC'
-EMAIL='dev@babyMRI.org'
+PLUGIN_TITLE='FL_MNIST_Classifier_plugin'
+SCRIPT_NAME='chrNIST'
+DESCRIPTION='A Simple ChRIS plugin for MNIST Classification with Federated Learning. Used to validate Federated Learning Pipeline'
+ORGANIZATION='Boston University'
+EMAIL='jedelist@bu.edu'
 
 # Github Actions: automatically test and build your code.
 # https://github.com/FNNDSC/python-chrisapp-template/wiki/Continuous-Integration
@@ -122,7 +122,7 @@ function replace_in_all () {
     -exec sed -i -e "s/$1/$2/g" '{}' \;
 }
 
-replace_in_all commandname "$SCRIPT_NAME"
+replace_in_all chrNIST "$SCRIPT_NAME"
 replace_in_all pl-appname "$PLUGIN_NAME"
 replace_in_all 'dev@babyMRI.org' "$EMAIL"
 replace_in_all FNNDSC "$ORGANIZATION"
