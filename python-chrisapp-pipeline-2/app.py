@@ -58,12 +58,15 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
     # adding a progress bar and parallelism.
     mapper = PathMapper.file_mapper(inputdir, outputdir, glob=options.pattern, suffix='.count.txt')
     for input_file, output_file in mapper:
-        # The code block below is a small and easy example of how to use a ``PathMapper``.
-        # It is recommended that you put your functionality in a helper function, so that
-        # it is more legible and can be unit tested.
-        data = input_file.read_text()
-        frequency = data.count(options.word)
-        output_file.write_text(str(frequency))
+        #Simple transformation of input for proof of concept
+        try:
+            number_str = input_file.read_text().strip()
+            number = float(number_str)
+            result = number + 5
+            output_file.write_text(str(result))
+            print(f"[OK] {input_file.name} → {output_file.name} (Result: {result})")
+        except Exception as e:
+            print(f"[ERROR] Could not process {input_file}: {e}")
 
 
 if __name__ == '__main__':
