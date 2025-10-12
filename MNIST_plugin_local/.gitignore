@@ -1,0 +1,25 @@
+*~
+*.DS_Store
+*.egg-info/
+__pycache__/
+
+.docker
+
+.idea/
+.vscode/
+
+venv/
+
+# Python virtual environment 
+.venv_mnist
+
+# Binary data
+MNIST_root/data/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Training outputs
+MNIST_root/outputs/
+*.ckpt

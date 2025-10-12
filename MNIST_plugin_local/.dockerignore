@@ -1,0 +1,41 @@
+.git/
+.github/
+.dockerignore
+.venv_mnist
+Dockerfile
+
+*~
+*.DS_Store
+*.egg-info/
+__pycache__/
+
+.docker
+
+.idea/
+.vscode/
+
+examples/
+
+venv/
+
+# Dataset caches
+MNIST_root/data/
+
+# Training outputs
+MNIST_root/outputs/
+*.pt
+*.pth
+
+# Logs
+*.log
+
+# Checkpoints
+*.ckpt
+
+# Python caches
+__pycache__/
+*.py[cod]
+*.pyo
+
+in/
+out/
