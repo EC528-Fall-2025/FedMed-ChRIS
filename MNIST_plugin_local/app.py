@@ -97,7 +97,7 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
             amp=options.amp,
             weight_decay=options.weight_decay,
         )
-        train_loader, test_loader = mnist_loaders(batch_size=cfg.batch_size, num_workers=cfg.num_workers)
+        train_loader, test_loader = mnist_loaders(batch_size=cfg.batch_size, num_workers=cfg.num_workers, root=outputdir)
         history, best_path = train_model(cfg, (train_loader, test_loader), SimpleCNN)
 
         # create a .txt summary file in outputdir (note to self: maybe add this as debug mode only)
