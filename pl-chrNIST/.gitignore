@@ -23,3 +23,8 @@ __pycache__/
 # Training outputs
 MNIST_root/outputs/
 *.ckpt
+
+# PNG/JPG data
+in/batch/MNIST_png
+*.png
+*.jpg

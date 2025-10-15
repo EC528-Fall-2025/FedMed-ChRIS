@@ -228,9 +228,11 @@ docker run --rm \
   -v "$PWD/in:/in:ro" \
   -v "$PWD/MNIST_root/outputs:/out" \
   jedelist/mnist-chris:latest \
-  chrNIST --mode predict --weights best.ckpt --image digit.png \
+  chrNIST --mode predict --weights out/best.ckpt --image digit.png \
   /in /out
 ```
+Example: `--image batch/mnist_png/test/9/7.png`
+The output and results will be stored in `/out` (or whatever outputdir is set to)
 
 Predict on a batch of images (a bunch of PNG images in a directory):
 ```bash
@@ -239,12 +241,12 @@ docker run --rm \
   -v "$PWD/in:/in:ro" \
   -v "$PWD/MNIST_root/outputs:/out" \
   jedelist/mnist-chris:latest \
-  chrNIST --mode predict --weights /out/best.ckpt --pattern "**/*.png" \
+  chrNIST --mode predict --weights /out/best.ckpt --pattern "batch/mnist_png/test/6/*.png" \
   /in /out
 ```
 Examples:
-* JPGs: --pattern "**/*.jpg"
-* All PNG/JPG: --pattern "**/*.[pj][pn]g"
+* JPGs: `--pattern "**/*.jpg" ` for all JPGs in outputdir recursively
+* All PNG/JPG: `--pattern "**/*.[pj][pn]g"` for all JPGs and PNGs in outputdir recursively
 
 Note: To cleanup unused all unused containers and images, run: `docker system prune -a`
 

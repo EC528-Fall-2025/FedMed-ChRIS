@@ -6,6 +6,8 @@ from typing import Optional, Tuple
 import numpy as np
 import torch
 from torch import nn
+from torchvision import transforms
+from PIL import Image
 
 MNIST_MEAN_STD: Tuple[float, float] = (0.1307, 0.3081)
 
