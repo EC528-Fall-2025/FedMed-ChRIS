@@ -1,0 +1,1 @@
+print("MNIST Classifier Module for ChRIS Plugin")
