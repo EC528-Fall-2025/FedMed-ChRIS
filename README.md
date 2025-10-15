@@ -197,7 +197,7 @@ docker run --rm \
   -v "$PWD/in:/in:ro" \
   -v "$PWD/MNIST_root/outputs:/out" \
   jedelist/mnist-chris:latest \
-  chrNIST --mode train --epochs 3 --batch-size 64 --lr 1e-3 --num-workers 0 \
+  chrNIST --mode train --epochs 1 --batch-size 64 --lr 1e-3 --num-workers 0 \
   /in /out
 ```
 
@@ -213,18 +213,35 @@ docker run --rm \
   jedelist/mnist-chris:latest \
   chrNIST --mode eval --weights /out/best.ckpt --num-workers 0 \
   /in /out
+
+  # Or use --weights best.ckpt if your weights are stored in in/best.ckpt
 ```
 
 ### 7. Predict on images (PNG/JPG)
 
+To predict on a single image: 
 ```bash
 # Example: Put a PNG to ./in/digit.png
 docker run --rm \
   -v "$PWD/in:/in:ro" \
   -v "$PWD/MNIST_root/outputs:/out" \
   jedelist/mnist-chris:latest \
-  chrNIST --mode predict --weights /out/best.ckpt --image /in/digit.png \
+  chrNIST --mode predict --weights best.ckpt --image digit.png \
   /in /out
 ```
+
+Predict on a batch of images (a bunch of PNG images in a directory):
+```bash
+# put a bunch of PNGs under ./in/ (can be nested)
+docker run --rm \
+  -v "$PWD/in:/in:ro" \
+  -v "$PWD/MNIST_root/outputs:/out" \
+  jedelist/mnist-chris:latest \
+  chrNIST --mode predict --weights /out/best.ckpt --pattern "**/*.png" \
+  /in /out
+```
+Examples:
+* JPGs: --pattern "**/*.jpg"
+* All PNG/JPG: --pattern "**/*.[pj][pn]g"
 
 Note: To cleanup unused all unused containers and images, run: `docker system prune -a`

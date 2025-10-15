@@ -16,6 +16,7 @@ from MNIST_root.utils import get_device, load_checkpoint, MNIST_MEAN_STD, resolv
 from torchvision import transforms
 from PIL import Image
 import torch
+import csv
 
 __version__ = '1.0.0'
 
@@ -44,12 +45,17 @@ parser.add_argument("--lr", type=float, default=TrainConfig.lr)
 parser.add_argument("--seed", type=int, default=TrainConfig.seed)
 parser.add_argument("--num-workers", type=int, default=TrainConfig.num_workers)
 parser.add_argument("--device", type=str, default=TrainConfig.device, choices=["auto", "cpu", "cuda", "mps"])
-parser.add_argument("--amp", type="store_true", default=TrainConfig.amp, help="Enable mixed precision if supported.")
+parser.add_argument("--amp", action="store_true", default=TrainConfig.amp, help="Enable mixed precision if supported.")
 parser.add_argument("--weight-decay", type=float, default=TrainConfig.weight_decay)
 
 # eval and predict options
 parser.add_argument("--weights", type=str, help="Path to checkpoint (.ckpt). If relative, resolved path against inputdir.")
-parser.add_argument("--image", type=str, help="Image file (PNG/JPG). If relative, resolved path against inputdir.")
+parser.add_argument("--image", type=str, help="Image file (PNG/JPG). If relative, resolved path against inputdir.") # Predicting on a signle image
+parser.add_argument("--pattern", type=str, default="**/*.png",
+                    help="Glob pattern (relative to inputdir) for batch prediction, e.g. '**/*.png'. "
+                         "Used only when --image is NOT given.")            # This is for predicting on a batch or folder of images
+parser.add_argument("--suffix", type=str, default=".pred.txt",
+                    help="Suffix for per-file outputs in batch mode, e.g., '.pred.txt' or '.json'.")
 
 parser.add_argument('-V', '--version', action='version', version=f'%(prog)s {__version__}')
 
@@ -62,9 +68,9 @@ parser.add_argument('-V', '--version', action='version', version=f'%(prog)s {__v
     parser=parser,
     title='MNIST Classifier ChRIS Plugin',
     category='',                 # ref. https://chrisstore.co/plugins
-    min_memory_limit='1Gi',      # supported units: Mi, Gi
+    min_memory_limit='2Gi',      # supported units: Mi, Gi
     min_cpu_limit='1000m',       # millicores, e.g. "1000m" = 1 CPU core
-    min_gpu_limit=0              # set min_gpu_limit=1 to enable GPU
+    min_gpu_limit=1              # set min_gpu_limit=1 to enable GPU
 )
 # Single entrypoint to this plugin. See README.md for usage.
 def main(options: Namespace, inputdir: Path, outputdir: Path):
@@ -128,24 +134,85 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
 
     # PREDICTING MODE (PNG/JPG)
     elif mode == "predict":
+        # Resolve weights (absolute path instead of using relative to inputfir)
         weights = resolve_path(options.weights, inputdir)
-        image = resolve_path(options.image, inputdir)
         if weights is None or not weights.exists():
-            raise FileNotFoundError("Please provide --weights (file must exist).")      # different from outputdir from template
-        if image is None or not image.exists():
-            raise FileNotFoundError("Please provide --image (file must exist).")        # Not properly implemented yet
+            raise FileNotFoundError("Please provide --weights (file must exist). "
+                                    "Relative paths are resolved against inputdir.")
 
+        # Load model
         model = SimpleCNN().to(device)
         load_checkpoint(model, str(weights), map_location=device)
-        x = preprocess_image(image).to(device)
-        with torch.no_grad():
-            logits = model(x)
-            probs = torch.softmax(logits, dim=1).squeeze(0)
-            pred = int(torch.argmax(probs).item())
-            conf = float(probs[pred].item()) * 100.0
+        model.eval()
 
-        (outputdir / "prediction.txt").write_text(f"digit={pred}\nconfidence={conf:.2f}\n")
-        print(f"[predict] Wrote prediction to: {outputdir}")
+        # SINGLE-IMAGE MODE 
+        if options.image:
+            image_path = resolve_path(options.image, inputdir)
+            if image_path is None or not image_path.exists():
+                raise FileNotFoundError("Please provide --image (file must exist). "
+                                        "Relative paths are resolved against inputdir.")
+            x = preprocess_image(image_path).to(device)
+            with torch.no_grad():
+                logits = model(x)
+                probs = torch.softmax(logits, dim=1).squeeze(0)
+                pred = int(torch.argmax(probs).item())
+                conf = float(probs[pred].item()) * 100.0
+
+            (outputdir / "prediction.txt").write_text(f"file={image_path.name}\ndigit={pred}\nconfidence={conf:.2f}\n")
+            print(f"[predict] Single image done → {outputdir/'prediction.txt'}")
+            return
+
+        # DIRECTORY (BATCH) PREDICTION MODE 
+        # PathMapper to mirror input->output paths and write per file results
+        # Example: input: /in/d1/a.png  => output: /out/d1/a.png.pred.txt
+        mapper = PathMapper.file_mapper(
+            inputdir=inputdir,
+            outputdir=outputdir,
+            glob=options.pattern,
+            suffix=options.suffix
+        )
+
+        # Collect vals for a summary CSV
+        rows = []
+        num_files = 0
+
+        for input_file, output_file in mapper:
+            # Skip non-files
+            if not input_file.is_file():
+                continue
+            num_files += 1
+
+            # Predict on image
+            x = preprocess_image(input_file).to(device)
+            with torch.no_grad():
+                logits = model(x)
+                probs = torch.softmax(logits, dim=1).squeeze(0)
+                pred = int(torch.argmax(probs).item())
+                conf = float(probs[pred].item()) * 100.0
+
+            # Write per-file output
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            output_file.write_text(f"digit={pred}\nconfidence={conf:.2f}\n")
+
+            # Appending for the summary
+            rows.append((str(input_file.relative_to(inputdir)), pred, conf))
+
+        if num_files == 0:
+            raise FileNotFoundError(
+                f"No images matched pattern '{options.pattern}' under {inputdir}. "
+                "Adjust --pattern (e.g. '**/*.png' or '**/*.[pj][pn]g')."
+            )
+
+        # Write the summary CSV 
+        summary_csv = outputdir / "results.csv"
+        with summary_csv.open("w", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(["relative_path", "predicted_digit", "confidence_percent"])
+            w.writerows(rows)
+
+        print(f"[predict] Batch done → {num_files} files")
+        print(f"[predict] Per-file outputs under: {outputdir} (suffix='{options.suffix}')")
+        print(f"[predict] Summary CSV: {summary_csv}")
 
 if __name__ == '__main__':
     main()
