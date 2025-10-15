@@ -192,6 +192,8 @@ docker run --rm jedelist/mnist-chris:latest chrNIST --help
 ### 5. Run training inside a container 
 
 ```bash
+cd pl-chrNIST   # or make sure you're in the plugin root
+
 docker run --rm \
   -e OMP_NUM_THREADS=4 -e MKL_NUM_THREADS=4 \
   -v "$PWD/in:/in:ro" \
@@ -245,3 +247,8 @@ Examples:
 * All PNG/JPG: --pattern "**/*.[pj][pn]g"
 
 Note: To cleanup unused all unused containers and images, run: `docker system prune -a`
+
+Keep this subtree updated:
+```bash
+git subtree pull --prefix=pl-chrNIST chrNIST main
+```
