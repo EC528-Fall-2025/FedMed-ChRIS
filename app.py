@@ -148,6 +148,7 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
         # SINGLE-IMAGE MODE 
         if options.image:
             image_path = resolve_path(options.image, inputdir)
+            print(f"Predict on single image mode. Looking for image at: {image_path}")
             if image_path is None or not image_path.exists():
                 raise FileNotFoundError("Please provide --image (file must exist). "
                                         "Relative paths are resolved against inputdir.")
@@ -158,16 +159,16 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
                 pred = int(torch.argmax(probs).item())
                 conf = float(probs[pred].item()) * 100.0
 
-            (outputdir / "prediction.txt").write_text(f"file={image_path.name}\ndigit={pred}\nconfidence={conf:.2f}\n")
-            print(f"[predict] Single image done → {outputdir/'prediction.txt'}")
+            (outputdir / "prediction.txt").write_text(f"file={image_path.name}\ndigit={pred}\nconfidence={conf:.2f}\ninput path={image_path}")
+            print(f"[predict] Single image done. See: {outputdir/'prediction.txt'}")
             return
 
         # DIRECTORY (BATCH) PREDICTION MODE 
         # PathMapper to mirror input->output paths and write per file results
         # Example: input: /in/d1/a.png  => output: /out/d1/a.png.pred.txt
         mapper = PathMapper.file_mapper(
-            inputdir=inputdir,
-            outputdir=outputdir,
+            input_dir=inputdir,            # source dir
+            output_dir=outputdir,           # dest dir
             glob=options.pattern,
             suffix=options.suffix
         )
@@ -192,7 +193,7 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
 
             # Write per-file output
             output_file.parent.mkdir(parents=True, exist_ok=True)
-            output_file.write_text(f"digit={pred}\nconfidence={conf:.2f}\n")
+            output_file.write_text(f"Predicted digit={pred}\nconfidence={conf:.2f}\n")
 
             # Appending for the summary
             rows.append((str(input_file.relative_to(inputdir)), pred, conf))
@@ -210,7 +211,7 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
             w.writerow(["relative_path", "predicted_digit", "confidence_percent"])
             w.writerows(rows)
 
-        print(f"[predict] Batch done → {num_files} files")
+        print(f"[predict] Batch done: {num_files} files")
         print(f"[predict] Per-file outputs under: {outputdir} (suffix='{options.suffix}')")
         print(f"[predict] Summary CSV: {summary_csv}")
 
