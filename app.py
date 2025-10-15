@@ -16,6 +16,7 @@ from MNIST_root.utils import get_device, load_checkpoint, MNIST_MEAN_STD, resolv
 from torchvision import transforms
 from PIL import Image
 import torch
+import os
 
 __version__ = '1.0.0'
 
@@ -53,6 +54,42 @@ parser.add_argument("--image", type=str, help="Image file (PNG/JPG). If relative
 
 parser.add_argument('-V', '--version', action='version', version=f'%(prog)s {__version__}')
 
+def print_dir_tree(root: Path, label: str) -> None:
+    """
+    Print a full recursive listing of `root`.
+    Shows directories with trailing '/' and files with byte size.
+    """
+    print(f"\n[{label}] root={root}")
+    if not root.exists():
+        print("  (does not exist)")
+        return
+    # print the root itself
+    print("  [D] .")
+    try:
+        for p in sorted(root.rglob("*"), key=lambda x: str(x).lower()):
+            rel = p.relative_to(root)
+            if p.is_dir():
+                print(f"  [D] {rel}/")
+            else:
+                try:
+                    size = p.stat().st_size
+                except Exception as e:
+                    size = f"stat-error:{e}"
+                print(f"  [F] {rel}  ({size} bytes)")
+    except Exception as e:
+        print(f"  [error] failed walking {root}: {e}")
+
+def prep_dataset_root(outputdir: Path) -> None:
+    """
+    Ensure torchvision's `root="data"` resolves to a writable path.
+    We move CWD to outputdir and pre-create ./data under it.
+    """
+    try:
+        (outputdir / "data").mkdir(parents=True, exist_ok=True)
+        os.chdir(outputdir)
+        print(f"[setup] CWD set to {Path.cwd()} ; dataset root will be ./data")
+    except Exception as e:
+        print(f"[setup][warn] could not switch CWD to outputdir: {e}")
 
 # The main function of this *ChRIS* plugin is denoted by this ``@chris_plugin`` "decorator."
 # Some metadata about the plugin is specified here. There is more metadata specified in setup.py.
@@ -79,6 +116,8 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
     """
 
     print(DISPLAY_TITLE)
+    print_dir_tree(inputdir, "inputdir")
+    print_dir_tree(outputdir, "outputdir")
 
     mode = options.mode
     device = get_device(options.device)
@@ -97,6 +136,7 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
             amp=options.amp,
             weight_decay=options.weight_decay,
         )
+        prep_dataset_root(outputdir)
         train_loader, test_loader = mnist_loaders(batch_size=cfg.batch_size, num_workers=cfg.num_workers)
         history, best_path = train_model(cfg, (train_loader, test_loader), SimpleCNN)
 
@@ -118,6 +158,7 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
                                     "Relative paths are resolved against inputdir.")
         model = SimpleCNN().to(device)
         load_checkpoint(model, str(weights), map_location=device)
+        prep_dataset_root(outputdir)
         _, test_loader = mnist_loaders(batch_size=options.batch_size, num_workers=options.num_workers)
 
         # Model evaluation call from utils.py

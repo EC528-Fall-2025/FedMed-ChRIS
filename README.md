@@ -228,3 +228,8 @@ docker run --rm \
 ```
 
 Note: To cleanup unused all unused containers and images, run: `docker system prune -a`
+
+# Run on minichris
+```
+--mode predict --weights home_chris_chrnist_stuff/best.ckpt --image home_chris_chrnist_stuff/custom_3.png 
+```
