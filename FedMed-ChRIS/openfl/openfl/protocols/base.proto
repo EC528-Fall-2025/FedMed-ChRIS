@@ -1,0 +1,31 @@
+// Copyright (C) 2020-2023 Intel Corporation
+// Licensed subject to the terms of the separately executed evaluation license agreement between Intel Corporation and you.
+
+syntax = "proto3";
+
+// This is only needed to initializing the model weights on the aggregator
+message ModelProto {
+  repeated NamedTensor tensors = 1;
+}
+
+message NamedTensor {
+  string name = 1;
+  int32 round_number = 2;
+  bool lossless	= 3;
+  bool report = 4;
+  repeated string tags = 5;
+  repeated MetadataProto transformer_metadata = 6;
+  bytes data_bytes = 7;
+}
+
+message MetadataProto {
+  map<int32, float> int_to_float = 1;
+  repeated int32 int_list = 2;
+  repeated bool bool_list = 3;
+}
+
+// handles large size data
+message DataStream {
+  uint32 size = 1; // size, in bytes, of the data sent in npbytes
+  bytes npbytes = 2; // actual data
+}

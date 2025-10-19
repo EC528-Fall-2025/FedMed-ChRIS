@@ -1,0 +1,16 @@
+{
+  "name": "minichris",
+  "version": "1.0.0",
+  "description": "Github action for ChRIS backend services",
+  "author": "FNNDSC <dev@babyMRI.org>",
+  "license": "MIT",
+  "main": "wrapper.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FNNDSC/miniChRIS-docker.git"
+  },
+  "homepage": "https://chrisproject.org/",
+  "bugs": {
+    "url": "https://github.com/FNNDSC/miniChRIS-docker/issues"
+  }
+}

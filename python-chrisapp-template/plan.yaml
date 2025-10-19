@@ -1,0 +1,58 @@
+# OpenFL Workflow Plan for MNIST
+aggregator:
+  defaults: plan/defaults/aggregator.yaml
+  template: openfl.component.Aggregator
+
+collaborator:
+  defaults: plan/defaults/collaborator.yaml
+  template: openfl.component.Collaborator
+  num_collaborators: 2
+  
+network:
+  defaults: plan/defaults/network.yaml
+
+tasks:
+  aggregated_model_validation:
+    function: validate
+    kwargs:
+      apply: global
+      metrics:
+        - acc
+
+  locally_tuned_model_validation:
+    function: validate  
+    kwargs:
+      apply: local
+      metrics:
+        - acc
+
+  train:
+    function: train
+    kwargs:
+      metrics:
+        - loss
+
+data_loader:
+  defaults: plan/defaults/data_loader.yaml
+  template: openfl.federated.data.loader_mnist.MNISTDataLoader
+  settings:
+    batch_size: 32
+    train_split: 0.8
+
+task_runner:
+  defaults: plan/defaults/task_runner.yaml  
+  template: openfl.federated.task.runner_pt.PyTorchTaskRunner
+  settings:
+    device: cpu
+
+assigner:
+  defaults: plan/defaults/assigner.yaml
+  template: openfl.component.RandomGroupedAssigner
+  settings:
+    task_groups:
+      - name: train_and_validate
+        percentage: 1.0
+        tasks:
+          - train
+          - aggregated_model_validation
+          - locally_tuned_model_validation
