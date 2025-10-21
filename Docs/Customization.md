@@ -11,7 +11,7 @@ To change the name of the plugin (AKA the command used in the command line):
 - Change `CMD["pl-matt"]` to `CMD["[your name]"]`
 
 - Navigate to `ChRIS/miniChRIS-docker/chrisomatic.yml`
-- Change `- localhost/pl-matt:1.0.9` to '- localhost/[your name]:1.0.9`
+- Change `- localhost/pl-matt:1.0.9` to `- localhost/[your name]:1.0.9`
 
 ## Changing the version
 
