@@ -6,7 +6,7 @@
 | Name          | Email           |
 |---------------|-----------------|
 | Amado Diallo | [amadod@bu.edu](mailto:amadod@bu.edu) |
-| David Edelisr  | [jedelist@bu.edu](mailto:jedelist@bu.edu) |
+| David Edelist  | [jedelist@bu.edu](mailto:jedelist@bu.edu) |
 | Julie Green | [jugreen@bu.edu](mailto:jugreen@bu.edu) |
 | Matthew Hendsch    | [mhendsch@bu.edu](mailto:mhendsch@bu.edu) |
 | Anisa Qureshi    | [anisaqu@bu.edu](mailto:anisaqu@bu.edu) |
