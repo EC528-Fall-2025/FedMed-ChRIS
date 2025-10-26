@@ -156,7 +156,7 @@ if __name__ == "__main__":
         x_train, y_train,
         validation_data=(x_val, y_val),
         batch_size=model.batch_size,
-        epochs=3,
+        epochs=20,
         callbacks=[model._metrics_cb, model._cb],
         verbose=1,
     )
