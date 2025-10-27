@@ -19,7 +19,7 @@ def get_version(rel_path: str) -> str:
 
 
 setup(
-    name='FL_MNIST_Classifier_plugin',
+    name='pl-chrNIST',
     version=get_version('app.py'),
     description='A Simple ChRIS plugin for MNIST Classification. Used to validate Federated Learning Pipeline.',
     author='David Edelist',

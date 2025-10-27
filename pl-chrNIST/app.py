@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import os
+import sys
 from pathlib import Path
 from argparse import ArgumentParser, Namespace, ArgumentDefaultsHelpFormatter
 
@@ -11,7 +13,7 @@ from MNIST_root.config import TrainConfig, EvalConfig
 from MNIST_root.data import mnist_loaders
 from MNIST_root.engine import train_model
 from MNIST_root.models import SimpleCNN
-from MNIST_root.utils import get_device, load_checkpoint, MNIST_MEAN_STD, resolve_path, preprocess_image, _eval
+from MNIST_root.utils import get_device, load_checkpoint, MNIST_MEAN_STD, resolve_path, preprocess_image, _eval, print_dir_tree, prep_dataset_root, _is_info_probe
 
 from torchvision import transforms
 from PIL import Image
@@ -39,14 +41,14 @@ parser.add_argument("--mode",
                     help="Which operation to run. The choices are 'train', 'eval', or 'predict ")
 
 # Training options (specify hyperparameters)
-parser.add_argument("--epochs", type=int, default=TrainConfig.epochs)
-parser.add_argument("--batch-size", type=int, default=TrainConfig.batch_size)
-parser.add_argument("--lr", type=float, default=TrainConfig.lr)
-parser.add_argument("--seed", type=int, default=TrainConfig.seed)
-parser.add_argument("--num-workers", type=int, default=TrainConfig.num_workers)
-parser.add_argument("--device", type=str, default=TrainConfig.device, choices=["auto", "cpu", "cuda", "mps"])
+parser.add_argument("--epochs", type=int, default=TrainConfig.epochs, help="Number of training epochs")
+parser.add_argument("--batch-size", type=int, default=TrainConfig.batch_size, help="Batch size")
+parser.add_argument("--lr", type=float, default=TrainConfig.lr, help="Learning rate")
+parser.add_argument("--seed", type=int, default=TrainConfig.seed, help="Seed")
+parser.add_argument("--num-workers", type=int, default=TrainConfig.num_workers, help="Number of workers")
+parser.add_argument("--device", type=str, default=TrainConfig.device, choices=["auto", "cpu", "cuda", "mps"], help="CPU, CUDA MPS, or auto")
 parser.add_argument("--amp", action="store_true", default=TrainConfig.amp, help="Enable mixed precision if supported.")
-parser.add_argument("--weight-decay", type=float, default=TrainConfig.weight_decay)
+parser.add_argument("--weight-decay", type=float, default=TrainConfig.weight_decay, help="Weight decay")
 
 # eval and predict options
 parser.add_argument("--weights", type=str, help="Path to checkpoint (.ckpt). If relative, resolved path against inputdir.")
@@ -57,7 +59,7 @@ parser.add_argument("--pattern", type=str, default="**/*.png",
 parser.add_argument("--suffix", type=str, default=".pred.txt",
                     help="Suffix for per-file outputs in batch mode, e.g., '.pred.txt' or '.json'.")
 
-parser.add_argument('-V', '--version', action='version', version=f'%(prog)s {__version__}')
+parser.add_argument('-V', '--version', action='version', version=f'%(prog)s {__version__}', help="Version")
 
 
 # The main function of this *ChRIS* plugin is denoted by this ``@chris_plugin`` "decorator."
@@ -70,7 +72,7 @@ parser.add_argument('-V', '--version', action='version', version=f'%(prog)s {__v
     category='',                 # ref. https://chrisstore.co/plugins
     min_memory_limit='2Gi',      # supported units: Mi, Gi
     min_cpu_limit='1000m',       # millicores, e.g. "1000m" = 1 CPU core
-    min_gpu_limit=1              # set min_gpu_limit=1 to enable GPU
+    min_gpu_limit=0              # set min_gpu_limit=1 to enable GPU
 )
 # Single entrypoint to this plugin. See README.md for usage.
 def main(options: Namespace, inputdir: Path, outputdir: Path):
@@ -84,7 +86,12 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
     :param outputdir: directory where to write output files
     """
 
-    print(DISPLAY_TITLE)
+    # Causing miniChRIS local instance issues (printing to terminal)
+    if not _is_info_probe():
+        print(DISPLAY_TITLE, file=sys.stderr)
+
+    print_dir_tree(inputdir, "inputdir")
+    print_dir_tree(outputdir, "outputdir")
 
     mode = options.mode
     device = get_device(options.device)
@@ -103,6 +110,8 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
             amp=options.amp,
             weight_decay=options.weight_decay,
         )
+        # Keep this line below?
+        prep_dataset_root(outputdir)
         train_loader, test_loader = mnist_loaders(batch_size=cfg.batch_size, num_workers=cfg.num_workers)
         history, best_path = train_model(cfg, (train_loader, test_loader), SimpleCNN)
 
@@ -123,6 +132,8 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
             raise FileNotFoundError("Please provide --weights (file must exist). "
                                     "Relative paths are resolved against inputdir.")
         model = SimpleCNN().to(device)
+        # Keep this line below?
+        prep_dataset_root(outputdir)
         load_checkpoint(model, str(weights), map_location=device)
         _, test_loader = mnist_loaders(batch_size=options.batch_size, num_workers=options.num_workers)
 
@@ -137,6 +148,7 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
         # Resolve weights (absolute path instead of using relative to inputfir)
         weights = resolve_path(options.weights, inputdir)
         if weights is None or not weights.exists():
+            print(weights)
             raise FileNotFoundError("Please provide --weights (file must exist). "
                                     "Relative paths are resolved against inputdir.")
 
