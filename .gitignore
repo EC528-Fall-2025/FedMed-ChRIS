@@ -8,4 +8,6 @@ __pycache__/
 .idea/
 .vscode/
 *.egg-info/
+*~
+.docker
 

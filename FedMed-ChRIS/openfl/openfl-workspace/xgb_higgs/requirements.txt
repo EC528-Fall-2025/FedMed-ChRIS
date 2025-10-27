@@ -1,3 +1,0 @@
-modin[all]
-scikit-learn
-xgboost
