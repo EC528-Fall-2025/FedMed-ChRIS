@@ -79,3 +79,45 @@ def _eval(model: torch.nn.Module, loader, device: torch.device) -> Tuple[float, 
     avg_loss = total_loss / total
     acc = 100.0 * correct / total
     return avg_loss, acc
+
+
+def print_dir_tree(root: Path, label: str) -> None:
+    """
+    Print a full recursive listing of `root`.
+    Shows directories with trailing '/' and files with byte size.
+    """
+    print(f"\n[{label}] root={root}")
+    if not root.exists():
+        print("  (does not exist)")
+        return
+    # print the root itself
+    print("  [D] .")
+    try:
+        for p in sorted(root.rglob("*"), key=lambda x: str(x).lower()):
+            rel = p.relative_to(root)
+            if p.is_dir():
+                print(f"  [D] {rel}/")
+            else:
+                try:
+                    size = p.stat().st_size
+                except Exception as e:
+                    size = f"stat-error:{e}"
+                print(f"  [F] {rel}  ({size} bytes)")
+    except Exception as e:
+        print(f"  [error] failed walking {root}: {e}")
+
+def prep_dataset_root(outputdir: Path) -> None:
+    """
+    Ensure torchvision's `root="data"` resolves to a writable path.
+    We move CWD to outputdir and pre-create ./data under it.
+    """
+    try:
+        (outputdir / "data").mkdir(parents=True, exist_ok=True)
+        os.chdir(outputdir)
+        print(f"[setup] CWD set to {Path.cwd()} ; dataset root will be ./data")
+    except Exception as e:
+        print(f"[setup][warn] could not switch CWD to outputdir: {e}")
+
+# For plugin running on miniChRIS (cannot print to terminal in during setup time)
+def _is_info_probe() -> bool:
+    return os.getenv("CHRIS_PLUGIN_INFO") == "1" or "--json" in sys.argv

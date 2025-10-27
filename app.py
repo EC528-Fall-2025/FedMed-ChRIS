@@ -13,7 +13,7 @@ from MNIST_root.config import TrainConfig, EvalConfig
 from MNIST_root.data import mnist_loaders
 from MNIST_root.engine import train_model
 from MNIST_root.models import SimpleCNN
-from MNIST_root.utils import get_device, load_checkpoint, MNIST_MEAN_STD, resolve_path, preprocess_image, _eval
+from MNIST_root.utils import get_device, load_checkpoint, MNIST_MEAN_STD, resolve_path, preprocess_image, _eval, print_dir_tree, prep_dataset_root, _is_info_probe
 
 from torchvision import transforms
 from PIL import Image
@@ -25,10 +25,6 @@ __version__ = '1.0.0'
 DISPLAY_TITLE = r"""
 ChRIS Plugin: MNIST Classifier for Federated Learning Validation
 """
-
-# For plugin running on miniChRIS (cannot print to terminal in during setup time)
-def _is_info_probe() -> bool:
-    return os.getenv("CHRIS_PLUGIN_INFO") == "1" or "--json" in sys.argv
 
 
 parser = ArgumentParser(description=("Train/Evaluate/Predict an MNIST classifier as a ChRIS plugin.\n"
@@ -94,8 +90,8 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
     if not _is_info_probe():
         print(DISPLAY_TITLE, file=sys.stderr)
 
-    print(DISPLAY_TITLE)
-    
+    print_dir_tree(inputdir, "inputdir")
+    print_dir_tree(outputdir, "outputdir")
 
     mode = options.mode
     device = get_device(options.device)
@@ -114,6 +110,8 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
             amp=options.amp,
             weight_decay=options.weight_decay,
         )
+        # Keep this line below?
+        prep_dataset_root(outputdir)
         train_loader, test_loader = mnist_loaders(batch_size=cfg.batch_size, num_workers=cfg.num_workers)
         history, best_path = train_model(cfg, (train_loader, test_loader), SimpleCNN)
 
@@ -134,6 +132,8 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
             raise FileNotFoundError("Please provide --weights (file must exist). "
                                     "Relative paths are resolved against inputdir.")
         model = SimpleCNN().to(device)
+        # Keep this line below?
+        prep_dataset_root(outputdir)
         load_checkpoint(model, str(weights), map_location=device)
         _, test_loader = mnist_loaders(batch_size=options.batch_size, num_workers=options.num_workers)
 
@@ -148,6 +148,7 @@ def main(options: Namespace, inputdir: Path, outputdir: Path):
         # Resolve weights (absolute path instead of using relative to inputfir)
         weights = resolve_path(options.weights, inputdir)
         if weights is None or not weights.exists():
+            print(weights)
             raise FileNotFoundError("Please provide --weights (file must exist). "
                                     "Relative paths are resolved against inputdir.")
 

@@ -247,3 +247,9 @@ Examples:
 * All PNG/JPG: `--pattern "**/*.[pj][pn]g"` for all JPGs and PNGs in outputdir recursively
 
 Note: To cleanup unused all unused containers and images, run: `docker system prune -a`
+
+Ran in miniChRIS UI using:
+```bash
+chrNIST --mode predict \ --weights "home_chris_uploads_Feed for UI_feed_data_Oct_26__2025__11_42_PM_UI_feed_data/best.ckpt" \ --image "home_chris_uploads_Feed for UI_feed_data_Oct_26__2025__11_42_PM_UI_feed_data/35.png" \ --num-workers 0
+```
+* Note to self: need to find a cleaner way to leverage inputdir to get these paths to be more elegant.
