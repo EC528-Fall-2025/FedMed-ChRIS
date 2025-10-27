@@ -9,96 +9,81 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, SubsetRandomSampler
-from torchvision import datasets, transforms
+from torchvision import transforms
 
-# OpenFL Interactive API (libraries assumed present in container/venv)
-from openfl.interface.interactive_api.experiment import TaskInterface, DataInterface
+# For medical data
+import medmnist
+from medmnist import INFO
 
 __version__ = '1.0.9'
 
 DISPLAY_TITLE = r"""
-         ChRIS Plugin: OpenFL Interactive API - MNIST
+         ChRIS Plugin: OpenFL Interactive API - PneumoniaMNIST
 """
 
 # ---------------------------
 # Simple CNN Model
 # ---------------------------
 class SimpleCNN(nn.Module):
-    def __init__(self):
-        super(SimpleCNN, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3, 1)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1)
-        self.fc1 = nn.Linear(9216, 128)
-        self.fc2 = nn.Linear(128, 10)
-        
+    def __init__(self, in_channels=1, num_classes=2):
+        super().__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(in_channels, 32, kernel_size=3, stride=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(32, 64, kernel_size=3, stride=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2)
+        )
+        self.gap = nn.AdaptiveAvgPool2d(1) # -> [B, 64, 1, 1] regardless of H,W
+        self.classifier = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(64, 128),
+            nn.ReLU(inplace=True),
+            nn.Linear(128, num_classes)
+        )
+
     def forward(self, x):
-        x = torch.relu(self.conv1(x))
-        x = torch.relu(self.conv2(x))
-        x = torch.max_pool2d(x, 2)
-        x = torch.flatten(x, 1)
-        x = torch.relu(self.fc1(x))
-        return self.fc2(x)
+        x = self.features(x)
+        x = self.gap(x)
+        return self.classifier(x)
+
 
 # ---------------------------
 # OpenFL Interactive API Implementation (Local Simulation)
 # ---------------------------
-class MNISTDataset(DataInterface):
-    """OpenFL DataInterface for MNIST (used for local sharding only)."""
-
-    def __init__(self, collaborator_name, num_collaborators, **kwargs):
+class MedMNISTDataInterface():
+    """OpenFL-style DataInterface that shards a given base_dataset among collaborators."""
+    def __init__(self, collaborator_name, num_collaborators, base_dataset, batch_size=32, **kwargs):
         super().__init__(**kwargs)
         self.collaborator_name = collaborator_name
         self.num_collaborators = num_collaborators
+        self.base_dataset = base_dataset
+        self.batch_size = batch_size
 
-    def get_train_loader(self, batch_size=32):
-        """Return training data loader for this collaborator"""
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,))
-        ])
-
-        dataset = datasets.MNIST('./data', train=True, download=True, transform=transform)
-
-        # Split data among collaborators
-        total_size = len(dataset)
-        shard_size = total_size // self.num_collaborators
-        collab_idx = int(self.collaborator_name.replace('site', '')) - 1
-
-        start_idx = collab_idx * shard_size
-        end_idx = start_idx + shard_size if collab_idx < self.num_collaborators - 1 else total_size
-
-        indices = list(range(start_idx, end_idx))
-        sampler = SubsetRandomSampler(indices)
-
-        return DataLoader(dataset, batch_size=batch_size, sampler=sampler)
+    def get_train_loader(self, batch_size=None):
+        ds = self.base_dataset
+        total = len(ds)
+        shard = total // self.num_collaborators
+        idx = int(self.collaborator_name.replace('site', '')) - 1
+        start = idx * shard
+        end = start + shard if idx < self.num_collaborators - 1 else total
+        sampler = SubsetRandomSampler(list(range(start, end)))
+        return DataLoader(ds, batch_size=batch_size or self.batch_size, sampler=sampler)
 
     def get_valid_loader(self, batch_size=32):
-        """Return validation data loader"""
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,))
-        ])
-
-        dataset = datasets.MNIST('./data', train=False, download=True, transform=transform)
-        return DataLoader(dataset, batch_size=batch_size, shuffle=False)
+        # We keep validation outside via the main loop; not used here.
+        return DataLoader(self.base_dataset, batch_size=batch_size, shuffle=False)
 
     def get_train_data_size(self):
-        """Return number of training samples"""
-        total_size = 60000
-        shard_size = total_size // self.num_collaborators
-        return shard_size
-
-    def get_valid_data_size(self):
-        """Return number of validation samples"""
-        return 10000
+        return len(self.base_dataset) // self.num_collaborators
 
 
-class MNISTTaskRunner(TaskInterface):
+class TaskRunner():
     """OpenFL TaskInterface for training and validation (local use)."""
 
-    def __init__(self, model=None, **kwargs):
+    def __init__(self, model=None, in_channels=1, num_classes=2, **kwargs):
         super().__init__(**kwargs)
-        self.model = model if model is not None else SimpleCNN()
+        self.model = model if model is not None else SimpleCNN(in_channels=in_channels, num_classes=num_classes)
         self.optimizer = optim.SGD(self.model.parameters(), lr=0.01, momentum=0.9)
         self.criterion = nn.CrossEntropyLoss()
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -132,7 +117,8 @@ class MNISTTaskRunner(TaskInterface):
 
         with torch.no_grad():
             for data, target in batch_generator:
-                data, target = data.to(self.device), target.to(self.device)
+                data = data.to(self.device)
+                target = target.squeeze().long().to(self.device)
                 output = self.model(data)
                 val_loss += self.criterion(output, target).item()
                 pred = output.argmax(dim=1)
@@ -146,137 +132,124 @@ def run_openfl_interactive(num_clients, num_rounds, outputdir):
     """Run federated learning using OpenFL Interactive API (local simulation)"""
     
     print(" Using OpenFL Interactive API (Local Simulation)\n")
-    print(" Preparing MNIST dataset...")
-    
-    # Download dataset first
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
-    ])
-    datasets.MNIST('./data', train=True, download=True, transform=transform)
-    datasets.MNIST('./data', train=False, download=True, transform=transform)
-    
+    print(" Preparing PneumoniaMNIST dataset...")
     # Local simulation only (no director/envoys needed)
     print("  Note: Using local simulation mode (no director node required)")
     print("   For distributed OpenFL, please set up director and envoy nodes\n")
     
     return run_pytorch_federated_with_openfl_style(num_clients, num_rounds, outputdir)
 
-def run_pytorch_federated_with_openfl_style(num_clients, num_rounds, outputdir):
-    """Federated learning using OpenFL's TaskInterface pattern"""
-    print(" Setting up federated simulation...\n")
-    
+def _build_medmnist_pneumonia(size=28, download=True):
+    data_flag = 'pneumoniamnist'
+    info = INFO[data_flag]
+    DataClass = getattr(medmnist, info['python_class'])  # e.g., medmnist.PneumoniaMNIST
+
+    # Transform: keep grayscale and scale to [0,1]
     transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
+        transforms.ToTensor()
     ])
-    
-    train_dataset = datasets.MNIST('./data', train=True, download=True, transform=transform)
-    test_dataset = datasets.MNIST('./data', train=False, download=True, transform=transform)
-    
-    # Create data interfaces for each collaborator
+
+    train_ds = DataClass(split='train', download=download, transform=transform, size=size)
+    val_ds   = DataClass(split='val',   download=download, transform=transform, size=size)
+    test_ds  = DataClass(split='test',  download=download, transform=transform, size=size)
+
+    in_channels = 1          # BW
+    num_classes = len(info['label'])  # should be 2 for binary
+    return train_ds, val_ds, test_ds, in_channels, num_classes
+
+def run_pytorch_federated_with_openfl_style(num_clients, num_rounds, outputdir):
+    print(" Setting up federated simulation on PneumoniaMNIST (BW)...\n")
+
+    train_dataset, val_dataset, test_dataset, in_ch, num_classes = _build_medmnist_pneumonia(
+        size=28, download=True
+    )
+
+    # Create per-site data interfaces
     data_interfaces = []
     for i in range(num_clients):
         collab_name = f"site{i+1}"
-        data_interface = MNISTDataset(
+        data_interfaces.append(MedMNISTDataInterface(
             collaborator_name=collab_name,
-            num_collaborators=num_clients
-        )
-        data_interfaces.append(data_interface)
+            num_collaborators=num_clients,
+            base_dataset=train_dataset,
+            batch_size=32
+        ))
         print(f"   Created data interface for {collab_name}")
-    
-    # Global task runner (aggregator's model)
-    global_task = MNISTTaskRunner()
-    
-    # Federated training rounds
+
+    # Global task runner (aggregator)
+    global_task = TaskRunner(in_channels=in_ch, num_classes=num_classes)
+
     print("\n Starting federated learning...\n")
     for round_num in range(num_rounds):
-        print(f"{'='*60}")
-        print(f" Round {round_num + 1}/{num_rounds}")
-        print(f"{'='*60}")
-        
-        # Collect client models for aggregation
+        print(f"{'='*60}\n Round {round_num + 1}/{num_rounds}\n{'='*60}")
+
         client_state_dicts = []
-        
+
         for client_id, data_interface in enumerate(data_interfaces):
             print(f"   Site {client_id + 1} - Training...")
-            
-            # Create local task runner with global weights
-            local_task = MNISTTaskRunner()
+
+            # Local task with broadcasted weights
+            local_task = TaskRunner(in_channels=in_ch, num_classes=num_classes)
             local_task.model.load_state_dict(global_task.model.state_dict())
-            
-            # Get data loader
+
             train_loader = data_interface.get_train_loader(batch_size=32)
-            
-            # Train locally
-            total_loss = 0
-            batches = 0
+
+            total_loss, batches = 0.0, 0
             local_task.model.train()
-            
             for batch_idx, (data, target) in enumerate(train_loader):
-                if batch_idx >= 20:  # Limit batches for demo
+                if batch_idx >= 20:  # cap for speed, like before
                     break
-                
-                data, target = data.to(local_task.device), target.to(local_task.device)
+
+                data = data.to(local_task.device)
+                # MedMNIST returns labels with shape [B, 1]; CE expects [B], so squeeze.
+                target = target.squeeze().long().to(local_task.device)
+
                 local_task.optimizer.zero_grad()
                 output = local_task.model(data)
                 loss = local_task.criterion(output, target)
                 loss.backward()
                 local_task.optimizer.step()
-                
+
                 total_loss += loss.item()
                 batches += 1
-            
-            avg_loss = total_loss / batches if batches > 0 else 0
+
+            avg_loss = total_loss / batches if batches > 0 else 0.0
             print(f"     └─ Loss: {avg_loss:.4f}")
-            
-            # Collect model for aggregation
+
             client_state_dicts.append(local_task.model.state_dict())
-        
-        # Federated averaging
-        print(f"   Aggregating models (FedAvg)...")
+
+        # FedAvg aggregation
+        print("   Aggregating models (FedAvg)...")
         global_dict = global_task.model.state_dict()
         for key in global_dict.keys():
-            global_dict[key] = torch.stack(
-                [sd[key].float() for sd in client_state_dicts]
-            ).mean(0)
+            global_dict[key] = torch.stack([sd[key].float() for sd in client_state_dicts]).mean(0)
         global_task.model.load_state_dict(global_dict)
-        
-        # Validation
-        print(f"   Validating global model...")
-        val_loader = DataLoader(test_dataset, batch_size=1000, shuffle=False)
+
+        # Validate on MedMNIST test split
+        print("   Validating global model...")
+        val_loader = DataLoader(test_dataset, batch_size=1024, shuffle=False)
         val_metrics = global_task.validate(val_loader)
         print(f"     └─ Validation Accuracy: {val_metrics['val_accuracy']:.2f}%")
-    
+
     # Final evaluation
-    print(f"\n{'='*60}")
-    print(f" Final Evaluation")
-    print(f"{'='*60}")
-    
+    print(f"\n{'='*60}\n Final Evaluation\n{'='*60}")
     global_task.model.eval()
-    test_loader = DataLoader(test_dataset, batch_size=1000)
-    correct = 0
-    total = 0
-    
+    test_loader = DataLoader(test_dataset, batch_size=1024, shuffle=False)
+    correct = total = 0
     with torch.no_grad():
         for data, target in test_loader:
             data = data.to(global_task.device)
-            target = target.to(global_task.device)
+            target = target.squeeze().long().to(global_task.device)
             output = global_task.model(data)
             pred = output.argmax(dim=1)
             correct += pred.eq(target).sum().item()
-            total += len(target)
-    
-    final_accuracy = 100. * correct / total
+            total += target.size(0)
+    final_accuracy = 100.0 * correct / total if total else 0.0
     print(f" Final Test Accuracy: {final_accuracy:.2f}%\n")
-    
-    # Save model
+
     torch.save(global_task.model.state_dict(), outputdir / "final_model.pt")
-    
-    return {
-        "final_accuracy": final_accuracy,
-        "framework": "OpenFL Interactive API (Local Simulation)"
-    }
+    return {"final_accuracy": final_accuracy, "framework": "OpenFL Interactive API (Local Simulation)"}
+
 
 # (Removed separate PyTorch fallback; unified on local simulation path)
 
@@ -284,7 +257,7 @@ def run_pytorch_federated_with_openfl_style(num_clients, num_rounds, outputdir):
 # CLI Parser
 # ---------------------------
 parser = ArgumentParser(
-    description='Run federated learning on MNIST using OpenFL or PyTorch',
+    description='Run federated learning on PneumoniaMNIST using PyTorch',
     formatter_class=ArgumentDefaultsHelpFormatter
 )
 parser.add_argument('-r', '--rounds', type=int, default=3, help='Number of federation rounds')
@@ -296,7 +269,7 @@ parser.add_argument('-V', '--version', action='version', version=f'%(prog)s {__v
 # ---------------------------
 @chris_plugin(
     parser=parser,
-    title='OpenFL MNIST Federated Learning',
+    title='OpenFL PneumoniaMNIST Federated Learning',
     category='AI/ML',
     min_memory_limit='1Gi',
     min_cpu_limit='2000m',
