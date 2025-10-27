@@ -16,9 +16,9 @@ def get_version(rel_path: str) -> str:
         return version.group(0)
 
 setup(
-    name='pl-matt',
+    name='pl-pneumonia-mnist',
     version=get_version('app.py'),
-    description='A ChRIS plugin for federated learning with OpenFL on MNIST',
+    description='A ChRIS plugin for federated learning with simulated OpenFL on PneumoniaMNIST',
     author='FNNDSC',
     author_email='dev@babyMRI.org',
     url='https://github.com/FNNDSC/python-chrisapp-template',
@@ -29,12 +29,13 @@ setup(
         'torch>=1.12',
         'torchvision>=0.13',
         'numpy',
+        'medmnist>=3.0.2'
     ],
     license='MIT',
     python_requires='>=3.8',
     entry_points={
         'console_scripts': [
-            'pl-matt = app:main'
+            'pl-pneumonia-mnist = app:main'
         ]
     },
     classifiers=[

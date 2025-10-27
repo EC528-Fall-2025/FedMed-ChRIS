@@ -1,0 +1,5 @@
+chris_plugin==0.4.0
+openfl>=1.5
+torch>=1.12
+torchvision>=0.13
+medmnist>=3.0.2

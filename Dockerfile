@@ -1,10 +1,10 @@
 FROM docker.io/python:3.12.1-slim-bookworm
 
 LABEL org.opencontainers.image.authors="FNNDSC <dev@babyMRI.org>" \
-      org.opencontainers.image.title="pl-matt" \
+      org.opencontainers.image.title="pl-pneumonia-mnist" \
       org.opencontainers.image.description="A ChRIS plugin for federated learning with OpenFL on MNIST"
 
-ARG SRCDIR=/usr/local/src/pl-matt
+ARG SRCDIR=/usr/local/src/pl-pneumonia-mnist
 WORKDIR ${SRCDIR}
 
 COPY requirements.txt .
@@ -18,4 +18,4 @@ RUN pip install ".[${extras_require}]" \
 
 WORKDIR /
 
-CMD ["pl-matt"]
+CMD ["pl-pneumonia-mnist"]
