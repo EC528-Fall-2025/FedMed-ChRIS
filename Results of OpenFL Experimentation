@@ -1,0 +1,20 @@
+**Conclusions From OpenFL Experimentation:**
+**Federated Learning Converges Effectively:**
+From the Accuracy versus Time Graph we can see that accuracy improves and stabalizes to about 98.8-99% after 7-10 rounds. Loss in turn steadily decreases 
+after a similar number of rounds.
+**More Rounds Lead to Diminishing Returns:**
+We can see in the graph the most significant gains happen in around 7-10 rounds, so it is not worth running many more costly rounds to only minutely improve
+the accuracy of our model. 
+**Training Costs Scales with Communication:**
+Cumulative training time grows linearly with the number of federated learning rounds, which tells us that communication overhead dominates runtime. 
+**HyperParameters Matter:**
+From the Accuracy_vs._Learning_Rate graph, we can see the way different learning rates can drastically effect the accuracy of our model. In this case a
+higher learning rate was detrimental to our accuracy. A lower learning rate was fine, but a mid-range learning rate (about 1e-3) performed best for our model. 
+From this, we conclude that even in FL we will have to pay careful attention to tuning learning rates for creating the most accurate models.
+**Collaboration Improves Performance:**
+In the Accuracy_vs_Collaborators graph, I experiemented with the number of collaborators contributing to one FL model, using the amounts of 1-4 collaborators. As we might've been able to guess,
+more collaborators leads to a better model because it will not be overfit to any specific set of data. 
+**Stability Despite Client Variability:**
+In the accuracy_vs._rounds and loss_vs._rounds, we can see some erratic behavoir around round 11, which represents what would happen if one or more collaborators
+submited noisy data to the central aggregator for one or a few rounds. Even though the accuracy and Loss behaves abnormally in this particular round,
+the aggregator is able to recover and continue to create a model which increases in accuracy.
