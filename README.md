@@ -41,9 +41,9 @@ Our Primary Goals:
 
 ## 2. Users/Personas Of The Project:
 
-* **Lab/Researcher (academic use)**: Runs training on their own data inside ChRIS. Contributes model updates to a central aggregator without moving raw data. They care about simple steps to start runs and seeing results.
-* **Clinical user**: Just runs the plugin on local studies and looks at results. They only care about the output quality, convenience, and speed.
-* **ChRIS operator (demo/admin)**: Spins up multiple local ChRIS instances with separate data plus one aggregator. They care about having a local demo that shows it reliably working. 
+* **Lab/Researcher (academic use)**: Researchers use the platform to train machine learning models on their own datasets within ChRIS. They contribute model updates (not raw data) to a central aggregator, enabling collaborative learning across institutions while preserving privacy.
+* **Clinical user**: Clinical users aim to integrate their existing medical data systems with the federated learning workflow. They want to securely and independently contribute data so that clinical researchers can leverage it for developing and validating medical imaging models.
+* **ChRIS operator (demo/admin)**: ChRIS operators set up and manage multiple local ChRIS instances—each with its own dataset—plus a central aggregator. They are focused on ensuring reliable deployment and demonstration of federated learning across nodes.
 
 
 ** **
