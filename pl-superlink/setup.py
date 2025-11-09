@@ -26,7 +26,7 @@ setup(
     author_email='dev@babyMRI.org',
     url='https://github.com/FNNDSC/python-chrisapp-template',
     py_modules=['app'],
-    install_requires=['chris_plugin'],
+    install_requires=['chris_plugin', 'flwr[simulation]'],
     license='MIT',
     entry_points={
         'console_scripts': [
