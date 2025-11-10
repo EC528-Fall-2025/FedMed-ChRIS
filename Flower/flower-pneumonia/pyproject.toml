@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pneumoniamnist-federated"
+version = "1.0.0"
+description = "Federated Learning model on PneumoniaMNIST"
+license = "Apache-2.0"
+dependencies = [
+    "flwr[simulation]>=1.11.0,<2.0",
+    "flwr-datasets>=0.3.0,<1.0",
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "medmnist>=3.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[tool.flwr.app]
+publisher = "EC528-FedMed"
+
+[tool.flwr.app.components]
+serverapp = "flower_pneumonia.server_app:app"
+clientapp = "flower_pneumonia.client_app:app"
+
+[tool.flwr.app.config]
+num-server-rounds = 5
+fraction-fit = 1.0
+batch-size = 64
+local-epochs = 2
+min-available-clients = 2
+
+[tool.flwr.federations]
+default = "local-simulation"
+
+[tool.flwr.federations.local-simulation]
+options.num-supernodes = 3
