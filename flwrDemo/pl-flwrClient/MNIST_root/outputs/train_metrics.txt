@@ -1,0 +1,7 @@
+best_ckpt=/out/best.ckpt
+last_train_loss=0.1929
+last_val_loss=0.0429
+last_val_acc=98.52
+learning rate=0.00100
+batch_size=128
+epochs=1

@@ -1,0 +1,4 @@
+file=7.png
+digit=9
+confidence=99.64
+input path=/in/batch/mnist_png/test/9/7.png
