@@ -1,22 +1,13 @@
-# Python version can be changed, e.g.
-# FROM python:3.8
-# FROM ghcr.io/mamba-org/micromamba:1.5.1-focal-cuda-11.3.1
-FROM docker.io/python:3.12.1-slim-bookworm
-
-LABEL org.opencontainers.image.authors="FNNDSC <dev@babyMRI.org>" \
-      org.opencontainers.image.title="ChRIS Plugin Title" \
-      org.opencontainers.image.description="A ChRIS plugin that for testing purposes"
-
-ARG SRCDIR=/usr/local/src/app
-WORKDIR ${SRCDIR}
-
-COPY requirements.txt .
-RUN --mount=type=cache,sharing=private,target=/root/.cache/pip pip install -r requirements.txt
-
-COPY . .
-ARG extras_require=none
-RUN pip install ".[${extras_require}]" \
-    && cd / && rm -rf ${SRCDIR}
-WORKDIR /
-
-CMD ["commandname"]
+  1 FROM python:3.10-slim
+  2 WORKDIR /usr/local/src/app
+  3
+  4 # Install Python deps
+  5 COPY requirements.txt .
+  6 RUN pip install --no-cache-dir -r requirements.txt
+  7
+  8 # Copy only what you need at runtime
+  9 COPY app.py .
+ 10
+ 11 # Run the ChRIS plugin entrypoint (app.py)
+ 12 ENTRYPOINT ["python3", "app.py"]
+ 13
