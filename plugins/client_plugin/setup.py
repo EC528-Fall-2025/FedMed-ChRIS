@@ -14,9 +14,9 @@ setup(
     name="fedmed-fl-client",
     version=read_version(),
     description="Flower client ChRIS plugin used in the FedMed demo",
-    author="FedMed",
-    author_email="dev@fedmed.org",
-    url="https://github.com/FedMed-ChRIS",
+    author="FedMed BU Team",
+    author_email="rpsmith@bu.edu",
+    url="https://github.com/EC528-Fall-2025/FedMed-ChRIS",
     py_modules=["app"],
     install_requires=[
         "chris_plugin==0.4.0",
