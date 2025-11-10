@@ -11,23 +11,26 @@ def read_version() -> str:
 
 
 setup(
-    name="fedmed-fl-client",
+    name="fedmed-fl-superlink",
     version=read_version(),
-    description="Flower client ChRIS plugin used in the FedMed demo",
+    description="Flower-based coordinator ChRIS plugin for the FedMed demo",
     author="FedMed BU Team",
     author_email="rpsmith@bu.edu",
     url="https://github.com/EC528-Fall-2025/FedMed-ChRIS",
     py_modules=["app"],
+    packages=["fedmed_flower_app"],
+    package_dir={"fedmed_flower_app": "fedmed_flower_app/fedmed_flower_app"},
+    include_package_data=True,
+    package_data={"fedmed_flower_app": ["pyproject.toml"]},
     install_requires=[
         "chris_plugin==0.4.0",
-        "flwr==1.8.0",
-        "numpy==1.26.4",
-        "scikit-learn==1.5.0",
+        "flwr>=1.23.0,<2",
+        "numpy>=1.26,<3",
     ],
     license="MIT",
     entry_points={
         "console_scripts": [
-            "fedmed-fl-client = app:main",
+            "fedmed-fl-superlink = app:main",
         ]
     },
     classifiers=[

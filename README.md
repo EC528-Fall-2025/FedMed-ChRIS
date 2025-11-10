@@ -1,22 +1,24 @@
-## FedMed Flower Plugins + miniChRIS Walkthrough
+## FedMed Flower Apps + miniChRIS Walkthrough
 
-This repo contains two Flower-based _ChRIS_ plugins:
+This repository now ships a complete Flower Deployment Engine demo that runs entirely inside miniChRIS. Two ChRIS plugins wrap the Flower binaries:
 
-- `fedmed/fl-server:0.1.0` – runs the Flower coordinator.
-- `fedmed/fl-client:0.1.0` – runs a single Flower trainer that connects to the coordinator.
+- `fedmed/fl-superlink:0.2.0` – spins up a Flower **SuperLink** and launches the bundled FedMed **ServerApp**.
+- `fedmed/fl-supernode:0.2.0` – starts a Flower **SuperNode** that executes the FedMed **ClientApp**.
 
-Below is the end-to-end workflow for building the images, spinning up miniChRIS, importing the pipelines, and running a demo round entirely from the repo root.
+The Flower App (stored in `plugins/superlink_plugin/fedmed_flower_app`) uses SuperLink/SuperNode APIs exclusively and never touches deprecated `start_server`/`NumPyClient` helpers.
+
+Below is the full workflow for building the images, booting miniChRIS, importing the pipelines, and running an end-to-end round.
 
 ---
 
 ### 1. Build (or rebuild) the OCI images
 
 ```bash
-docker build -t docker.io/fedmed/fl-server:0.1.0 plugins/server_plugin
-docker build -t docker.io/fedmed/fl-client:0.1.0 plugins/client_plugin
+docker build -t docker.io/fedmed/fl-superlink:0.2.0 plugins/superlink_plugin
+docker build -t docker.io/fedmed/fl-supernode:0.2.0 plugins/supernode_plugin
 ```
 
-> Rerun these commands whenever you change the plugin code.
+> Rebuild whenever you change plugin or Flower App code. The SuperLink image bundles the Flower App sources, so every rebuild keeps SuperNodes in sync.
 
 ---
 
@@ -25,50 +27,59 @@ docker build -t docker.io/fedmed/fl-client:0.1.0 plugins/client_plugin
 From the repo root:
 
 ```bash
-./minichris
+./minichris.sh
 ```
 
-This wraps `minichris/minichris.sh`, brings up the full miniChRIS stack, and automatically runs `chrisomatic`. Watch the console for lines like:
+The wrapper script boots the stack, runs `chrisomatic`, and registers both FedMed plugins. Watch for lines such as:
 
 ```
-✔ docker.io/fedmed/fl-server:0.1.0 http://chris:8000/api/v1/plugins/6/
-✔ docker.io/fedmed/fl-client:0.1.0 http://chris:8000/api/v1/plugins/7/
+✔ docker.io/fedmed/fl-superlink:0.2.0 http://chris:8000/api/v1/plugins/6/
+✔ docker.io/fedmed/fl-supernode:0.2.0 http://chris:8000/api/v1/plugins/7/
 ```
 
-Those checkmarks confirm the plugins were registered successfully.
+Those checkmarks mean the plugins are available to pipelines.
 
 ---
 
 ### 3. Import the pipelines via the UI
 
-1. Open the UI at http://localhost:8020/pipelines (default credentials: `chris/chris1234`).
-2. Click **Upload Pipeline**, then import both yml files from `pipelines/`:
-   - `pipelines/fedmed_fl_server.yml`
-   - `pipelines/fedmed_fl_client.yml`
-
-Each upload should now appear in the “Pipelines” list.
+1. Open http://localhost:8020/pipelines and log in (`chris/chris1234`).
+2. Upload both YAML definitions from `pipelines/`:
+   - `pipelines/fedmed_fl_superlink.yml`
+   - `pipelines/fedmed_fl_supernode.yml`
 
 ---
 
-### 4. Launch demo analyses (server first, then client)
+### 4. Launch demo analyses (SuperLink first, then SuperNodes)
 
-1. Go to **Analysis → New and Existing Analyses**.
-2. Create two throwaway analyses with any dummy file you want and name them anything. For this example we will call them `server` and `client`.
+Create two throwaway analyses named `superlink` and `supernode` (any seed file works).
 
-#### Server analysis
-1. Open the `server` analysis.
-2. Right-click the lone root node and choose **Add Pipeline**.
-3. Select **FedMed Flower Server v0.1.0**.
-4. Once the job starts, open the node details and check the **Logs** tab. Near the top you’ll see something like:
+#### SuperLink analysis
+
+1. Open the `superlink` analysis, right-click its lone node, and select **Add Pipeline → FedMed Flower SuperLink v0.2.0**.
+2. Leave defaults unless you need extra rounds/clients. The plugin log prints something like:
    ```
-   [fedmed-fl-server] reachable IPv4 addresses: 172.19.0.2
+   [fedmed-fl-superlink] SuperNodes should target Fleet API at 172.22.0.3:9092
+   [fedmed-fl-superlink] reachable IPv4 addresses: 172.22.0.3
    ```
-   if that is not the exact address you see, make sure to change the **server_host** in `pipelines/fedmed_fl_client.yml`
+3. Copy the Fleet API IP/port—clients must point `superlink_host`/`superlink_port` at that address.
+4. When training finishes the log emits:
+   ```
+   [fedmed-superlink-app] SUMMARY {...}
+   ```
+   and `/outgoing/server_summary.json` receives the parsed JSON (round metrics, run id, etc.).
 
-#### Client analysis
-1. Open the `client` analysis.
-2. Right-click the root node → **Add Pipeline** → select **FedMed Flower Client v0.1.0**.
-3. Submit the dialog. The client log should show `connecting to <IP>:9091` followed by the usual Flower messages.
+#### SuperNode analysis
+
+1. Open the `supernode` analysis, right-click the node, and select **Add Pipeline → FedMed Flower SuperNode v0.2.0**.
+2. Set `superlink_host` to the IP reported by the SuperLink pipeline (e.g. `172.22.0.3`). Keep `superlink_port=9092` unless you changed it.
+3. Launch one analysis per participant (`cid` ranges from `0` to `total_clients-1`). Each SuperNode connects to the running SuperLink, receives the bundled ClientApp, and logs
+   ```
+   [fedmed-supernode-app] SUMMARY {"kind":"train", ... }
+   ```
+4. `/outgoing/client_metrics.json` captures the last `SUMMARY` payload for auditing.
+
+> **Tip:** The SuperNode container shuts down automatically once the SuperLink stops, so you always run the SuperLink pipeline first and tear it down last.
 
 ---
 
@@ -76,16 +87,16 @@ Each upload should now appear in the “Pipelines” list.
 
 1. Tear the stack down from the repo root:
    ```bash
-   ./minichris down
+   ./minichris.sh down
    ```
    (This runs `minichris/unmake.sh`, stopping containers and removing associated networks/volumes.)
-2. Optional: remove the OCI images if you don’t need them anymore:
+2. Remove the OCI images if you no longer need them:
    ```bash
-   docker image rm docker.io/fedmed/fl-server:0.1.0 docker.io/fedmed/fl-client:0.1.0
+   docker image rm docker.io/fedmed/fl-superlink:0.2.0 docker.io/fedmed/fl-supernode:0.2.0
    ```
-3. Optional: prune residual volumes if you ran multiple demos:
+3. Optional: prune Flower state caches created during the run:
    ```bash
-   docker volume rm minichris-files minichris_db_data minichris_pfdcm
+   rm -rf /tmp/fedmed-flwr /tmp/fedmed-flwr-node*
    ```
 
-You can now reboot the workflow at any time by rebuilding the images (Step 1) and running `./minichris` again.
+Re-run the workflow anytime by rebuilding the images (Step 1) and executing `./minichris.sh` again. The Flower App version stays synchronized with the containers, so any change in `fedmed_flower_app/` takes effect as soon as you rebuild `fedmed/fl-superlink`.
