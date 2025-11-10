@@ -3,6 +3,7 @@
 
 import json
 import signal
+import subprocess
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
 from pathlib import Path
 from typing import Any, Dict, Iterable, Tuple
@@ -79,6 +80,16 @@ def serialize_history(history: Any | None) -> Dict[str, Any]:
     return summary
 
 
+def _discover_ipv4_addresses() -> list[str]:
+    """Attempt to list IPv4 addresses that clients could need to target."""
+    try:
+        output = subprocess.check_output(["hostname", "-I"], text=True).strip()
+        ips = sorted({token for token in output.split() if token})
+        return ips
+    except Exception:
+        return []
+
+
 def run_server(address: str, rounds: int, expected_clients: int) -> Dict[str, Any]:
     """Start the Flower server and return the training history."""
     strategy = fl.server.strategy.FedAvg(
@@ -91,6 +102,20 @@ def run_server(address: str, rounds: int, expected_clients: int) -> Dict[str, An
         f"for {rounds} FL round(s)",
         flush=True,
     )
+    reachable_ips = _discover_ipv4_addresses()
+    if reachable_ips:
+        print(
+            "[fedmed-fl-server] reachable IPv4 addresses: "
+            + ", ".join(reachable_ips),
+            flush=True,
+        )
+    else:
+        print(
+            "[fedmed-fl-server] unable to auto-detect host IPs; "
+            "clients must be pointed at the compute-node address manually.",
+            flush=True,
+        )
+
     history = fl.server.start_server(
         server_address=address,
         config=fl.server.ServerConfig(num_rounds=rounds),

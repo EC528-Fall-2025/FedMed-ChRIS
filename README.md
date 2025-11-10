@@ -1,67 +1,91 @@
-## FedMed Flower Demo (Docker + ChRIS Plugins)
+## FedMed Flower Plugins + miniChRIS Walkthrough
 
-This repo packages a minimal Flower-based federated learning demo as two standalone _ChRIS_ plugins so you can simulate “different networks” using two Docker containers:
+This repo contains two Flower-based _ChRIS_ plugins:
 
-- `plugins/server_plugin`: launches the Flower coordinator and waits for a configurable number of trainers.
-- `plugins/client_plugin`: runs a local logistic-regression trainer that only knows how to fit its own data shard; it simply reports updates back to the server.
+- `fedmed/fl-server:0.1.0` – runs the Flower coordinator.
+- `fedmed/fl-client:0.1.0` – runs a single Flower trainer that connects to the coordinator.
 
-The client’s training loop is completely unaware of federated learning. Flower only wraps the trainer at the plugin boundary so we can show the two isolated containers talking to each other.
+Below is the end-to-end workflow for building the images, spinning up miniChRIS, importing the pipelines, and running a demo round entirely from the repo root.
 
-## Build the Plugin Images
+---
 
-Run all commands from the repo root.
+### 1. Build (or rebuild) the OCI images
 
 ```bash
-docker build -t fedmed/fl-server plugins/server_plugin
-docker build -t fedmed/fl-client plugins/client_plugin
+docker build -t docker.io/fedmed/fl-server:0.1.0 plugins/server_plugin
+docker build -t docker.io/fedmed/fl-client:0.1.0 plugins/client_plugin
 ```
 
-## Local Demo (two terminals)
+> Rerun these commands whenever you change the plugin code.
 
-1. Create a network and output folders:
-   ```bash
-   docker network create fedmed-net || true
-   mkdir -p demo/server-in demo/server-out demo/client-in demo/client-out
+---
+
+### 2. Start miniChRIS
+
+From the repo root:
+
+```bash
+./minichris
+```
+
+This wraps `minichris/minichris.sh`, brings up the full miniChRIS stack, and automatically runs `chrisomatic`. Watch the console for lines like:
+
+```
+✔ docker.io/fedmed/fl-server:0.1.0 http://chris:8000/api/v1/plugins/6/
+✔ docker.io/fedmed/fl-client:0.1.0 http://chris:8000/api/v1/plugins/7/
+```
+
+Those checkmarks confirm the plugins were registered successfully.
+
+---
+
+### 3. Import the pipelines via the UI
+
+1. Open the UI at http://localhost:8020/pipelines (default credentials: `chris/chris1234`).
+2. Click **Upload Pipeline**, then import both yml files from `pipelines/`:
+   - `pipelines/fedmed_fl_server.yml`
+   - `pipelines/fedmed_fl_client.yml`
+
+Each upload should now appear in the “Pipelines” list.
+
+---
+
+### 4. Launch demo analyses (server first, then client)
+
+1. Go to **Analysis → New and Existing Analyses**.
+2. Create two throwaway analyses with any dummy file you want and name them anything. For this example we will call them `server` and `client`.
+
+#### Server analysis
+1. Open the `server` analysis.
+2. Right-click the lone root node and choose **Add Pipeline**.
+3. Select **FedMed Flower Server v0.1.0**.
+4. Once the job starts, open the node details and check the **Logs** tab. Near the top you’ll see something like:
    ```
-2. **Terminal 1 – server plugin**
-   ```bash
-   docker run --rm --name fedmed-server \
-     --network fedmed-net \
-     -v $(pwd)/demo/server-in:/incoming:ro \
-     -v $(pwd)/demo/server-out:/outgoing:rw \
-     fedmed/fl-server \
-       fedmed-fl-server --host 0.0.0.0 --port 9091 \
-       --rounds 1 --expected-clients 1 \
-       /incoming /outgoing
+   [fedmed-fl-server] reachable IPv4 addresses: 172.19.0.2
    ```
-   Grab the container’s IP (Flower prefers a literal IPv4 address on Docker networks):
+   if that is not the exact address you see, make sure to change the **server_host** in `pipelines/fedmed_fl_client.yml`
+
+#### Client analysis
+1. Open the `client` analysis.
+2. Right-click the root node → **Add Pipeline** → select **FedMed Flower Client v0.1.0**.
+3. Submit the dialog. The client log should show `connecting to <IP>:9091` followed by the usual Flower messages.
+
+---
+
+### 5. Cleanup
+
+1. Tear the stack down from the repo root:
    ```bash
-   export FEDMED_SERVER_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' fedmed-server)
-   echo "Server reachable at ${FEDMED_SERVER_IP}:9091"
+   ./minichris down
    ```
-   The server logs stream to the terminal and `demo/server-out/server_summary.json` captures the aggregated metrics.
-
-3. **Terminal 2 – client plugin**
+   (This runs `minichris/unmake.sh`, stopping containers and removing associated networks/volumes.)
+2. Optional: remove the OCI images if you don’t need them anymore:
    ```bash
-   docker run --rm --name fedmed-client \
-     --network fedmed-net \
-     -v $(pwd)/demo/client-in:/incoming:ro \
-     -v $(pwd)/demo/client-out:/outgoing:rw \
-     fedmed/fl-client \
-       fedmed-fl-client --cid 0 --total-clients 1 \
-       --server-host ${FEDMED_SERVER_IP} --server-port 9091 \
-       /incoming /outgoing
+   docker image rm docker.io/fedmed/fl-server:0.1.0 docker.io/fedmed/fl-client:0.1.0
    ```
-   The client trains locally, reports metrics to stdout, and stores `client_metrics.json` inside `demo/client-out/`.
+3. Optional: prune residual volumes if you ran multiple demos:
+   ```bash
+   docker volume rm minichris-files minichris_db_data minichris_pfdcm
+   ```
 
-Once the Flower round finishes, both containers exit. Destroy the network with `docker network rm fedmed-net` if desired.
-
-## File Overview
-
-| Path                          | Purpose |
-|-------------------------------|---------|
-| `plugins/server_plugin/`     | Complete ChRIS plugin for the Flower server (Dockerfile, setup.py, etc.) |
-| `plugins/client_plugin/`     | Client-side ChRIS plugin with its own Dockerfile and training loop |
-| `requirements.txt`           | Optional helper for local Python development (mirrors the plugin deps) |
-
-Feel free to duplicate `client_plugin` for additional sites—only CLI flags like `--cid`/`--total-clients` need tweaking to make them unique.
+You can now reboot the workflow at any time by rebuilding the images (Step 1) and running `./minichris` again.

@@ -15,6 +15,8 @@ setup(
     version=read_version(),
     description="Flower-based coordinator ChRIS plugin for the FedMed demo",
     author="FedMed",
+    author_email="dev@fedmed.org",
+    url="https://github.com/FedMed-ChRIS",
     py_modules=["app"],
     install_requires=[
         "chris_plugin==0.4.0",

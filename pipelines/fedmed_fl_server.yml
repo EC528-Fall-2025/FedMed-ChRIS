@@ -1,0 +1,19 @@
+---
+authors: FedMed Team <dev@fedmed.org>
+name: "FedMed Flower Server v0.1.0"
+description:
+  Launches the Flower coordinator inside CUBE. Run this pipeline once for each
+  federated training session, then trigger the client pipeline(s) while the
+  server job is still active.
+category: Federated Learning
+locked: false
+plugin_tree:
+  - title: start-flower-server
+    plugin: fl-server v0.1.0
+    previous: ~
+    plugin_parameter_defaults:
+      host: 0.0.0.0
+      port: 9091
+      rounds: 1
+      expected_clients: 1
+      summary_file: server_summary.json
