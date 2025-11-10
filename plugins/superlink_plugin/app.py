@@ -12,6 +12,7 @@ import tempfile
 import threading
 import time
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
+from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
 from typing import Any, Callable, List
@@ -36,6 +37,37 @@ REPO_URL = "https://github.com/EC528-Fall-2025/FedMed-ChRIS"
 Process = subprocess.Popen
 
 CHILDREN: list[Process] = []
+
+
+@dataclass(frozen=True)
+class FlowerRunConfig:
+    """Subset of plugin args that map directly to Flower run overrides."""
+
+    rounds: int
+    total_clients: int
+    local_epochs: int
+    learning_rate: float
+    data_seed: int
+    fraction_evaluate: float
+
+    def as_override_string(self) -> str:
+        return (
+            f"num-server-rounds={self.rounds} "
+            f"total-clients={self.total_clients} "
+            f"local-epochs={self.local_epochs} "
+            f"learning-rate={self.learning_rate} "
+            f"data-seed={self.data_seed} "
+            f"fraction-evaluate={self.fraction_evaluate}"
+        )
+
+
+@dataclass(frozen=True)
+class SuperLinkAddresses:
+    """Collection of network addresses derived from CLI options."""
+
+    fleet: str
+    control: str
+    serverapp: str
 
 
 def build_parser() -> ArgumentParser:
@@ -86,6 +118,7 @@ def _stream_lines(
     prefix: str,
     hook: Callable[[str], None] | None = None,
 ) -> None:
+    """Continuously read a subprocess pipe, echoing lines and invoking hook if set."""
     if stream is None:
         return
     for raw in iter(stream.readline, ""):
@@ -97,6 +130,7 @@ def _stream_lines(
 
 
 def _register_child(proc: Process) -> None:
+    """Track a child process so it can be torn down during cleanup."""
     CHILDREN.append(proc)
 
 
@@ -121,6 +155,7 @@ def _cleanup_children() -> None:
 
 
 def _stage_flower_app(state_dir: Path) -> tuple[Path, Callable[[], None]]:
+    """Copy the Flower App into a temporary project directory for `flwr run`."""
     staging_root = Path(
         tempfile.mkdtemp(prefix="fedmed-flower-app-", dir=str(state_dir))
     )
@@ -137,6 +172,36 @@ def _stage_flower_app(state_dir: Path) -> tuple[Path, Callable[[], None]]:
     return project_dir, _cleanup
 
 
+def _build_run_config(options: Namespace) -> FlowerRunConfig:
+    """Extract the Flower run override settings from plugin options."""
+    return FlowerRunConfig(
+        rounds=options.rounds,
+        total_clients=options.total_clients,
+        local_epochs=options.local_epochs,
+        learning_rate=options.learning_rate,
+        data_seed=options.data_seed,
+        fraction_evaluate=options.fraction_evaluate,
+    )
+
+
+def _build_addresses(options: Namespace) -> SuperLinkAddresses:
+    """Produce the Fleet/Control/ServerApp bind addresses."""
+    return SuperLinkAddresses(
+        fleet=f"{options.host}:{options.fleet_port}",
+        control=f"{options.host}:{options.control_port}",
+        serverapp=f"{options.host}:{options.serverapp_port}",
+    )
+
+
+def _prepare_environment(state_dir: str) -> tuple[dict[str, str], Path]:
+    """Create the FLWR_HOME directory and return (env, home_path)."""
+    env = os.environ.copy()
+    flwr_home = Path(state_dir).expanduser()
+    flwr_home.mkdir(parents=True, exist_ok=True)
+    env["FLWR_HOME"] = str(flwr_home)
+    return env, flwr_home
+
+
 def handle_signals() -> None:
     def _handle(signum, _frame):  # type: ignore[override]
         print(f"\n[fedmed-fl-superlink] received signal {signum}, cleaning up...", flush=True)
@@ -147,16 +212,14 @@ def handle_signals() -> None:
     signal.signal(signal.SIGINT, _handle)
 
 
-def _launch_superlink(options: Namespace, env: dict[str, str]) -> Process:
-    fleet_addr = f"{options.host}:{options.fleet_port}"
-    control_addr = f"{options.host}:{options.control_port}"
-    serverapp_addr = f"{options.host}:{options.serverapp_port}"
+def _launch_superlink(addresses: SuperLinkAddresses, env: dict[str, str]) -> Process:
+    """Start the long-lived Flower SuperLink services inside this container."""
     cmd: List[str] = [
         "flower-superlink",
         "--insecure",
-        f"--fleet-api-address={fleet_addr}",
-        f"--control-api-address={control_addr}",
-        f"--serverappio-api-address={serverapp_addr}",
+        f"--fleet-api-address={addresses.fleet}",
+        f"--control-api-address={addresses.control}",
+        f"--serverappio-api-address={addresses.serverapp}",
     ]
     print(f"[fedmed-fl-superlink] starting SuperLink: {' '.join(cmd)}", flush=True)
     proc = subprocess.Popen(
@@ -173,18 +236,16 @@ def _launch_superlink(options: Namespace, env: dict[str, str]) -> Process:
     return proc
 
 
-def _run_federation(options: Namespace, env: dict[str, str]) -> dict[str, Any]:
-    control_addr = f"{options.host}:{options.control_port}"
+def _run_federation(
+    options: Namespace,
+    addresses: SuperLinkAddresses,
+    run_cfg: FlowerRunConfig,
+    env: dict[str, str],
+) -> dict[str, Any]:
+    """Bundle the Flower App, run `flwr run`, and return the parsed summary."""
     staged_app_dir, cleanup_app = _stage_flower_app(Path(env["FLWR_HOME"]))
-    run_config = (
-        f"num-server-rounds={options.rounds} "
-        f"total-clients={options.total_clients} "
-        f"local-epochs={options.local_epochs} "
-        f"learning-rate={options.learning_rate} "
-        f"data-seed={options.data_seed} "
-        f"fraction-evaluate={options.fraction_evaluate}"
-    )
-    fed_config = f"address='{control_addr}' insecure=true"
+    run_config = run_cfg.as_override_string()
+    fed_config = f"address='{addresses.control}' insecure=true"
     cmd: List[str] = [
         "flwr",
         "run",
@@ -261,12 +322,11 @@ def _plugin_main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
     if not APP_DIR.exists():
         raise FileNotFoundError(f"Flower app missing at {APP_DIR}")
 
-    env = os.environ.copy()
-    flwr_home = Path(options.state_dir).expanduser()
-    flwr_home.mkdir(parents=True, exist_ok=True)
-    env["FLWR_HOME"] = str(flwr_home)
+    addresses = _build_addresses(options)
+    run_cfg = _build_run_config(options)
+    env, flwr_home = _prepare_environment(options.state_dir)
 
-    fleet_addr = f"{options.host}:{options.fleet_port}"
+    fleet_addr = addresses.fleet
     print(
         f"[fedmed-fl-superlink] SuperNodes should target Fleet API at {fleet_addr}",
         flush=True,
@@ -284,10 +344,10 @@ def _plugin_main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
             flush=True,
         )
 
-    superlink = _launch_superlink(options, env)
+    superlink = _launch_superlink(addresses, env)
     time.sleep(max(0, options.startup_delay))
     try:
-        summary = _run_federation(options, env)
+        summary = _run_federation(options, addresses, run_cfg, env)
     finally:
         _terminate_process(superlink)
         _cleanup_children()

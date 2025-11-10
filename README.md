@@ -7,6 +7,12 @@ This repository now ships a complete Flower Deployment Engine demo that runs ent
 
 The Flower App (stored in `plugins/superlink_plugin/fedmed_flower_app`) uses SuperLink/SuperNode APIs exclusively and never touches deprecated `start_server`/`NumPyClient` helpers.
 
+### Architecture at a glance
+
+- **Long-lived components**: the Flower **SuperLink** acts as the control plane, while each Flower **SuperNode** keeps reconnecting and waits for new tasks. In this demo both are wrapped as ChRIS plugins, but the roles map directly to production deployments where SuperLink/SuperNodes run continuously.
+- **Short-lived components**: every `flwr run` triggers a short-lived **ServerApp** plus one **ClientApp** per SuperNode. Those runs pull the Flower App bundle from the SuperLink, execute the ML logic, and exit.
+- **ChRIS orchestration**: the SuperLink plugin stages the Flower App bundle, starts the Flower control plane, and kicks off the run. The SuperNode plugin starts `flower-supernode`, streams metrics, and writes the final JSON summary to `/outgoing`.
+
 Below is the full workflow for building the images, booting miniChRIS, importing the pipelines, and running an end-to-end round.
 
 ---
@@ -79,7 +85,7 @@ Create two throwaway analyses named `superlink` and `supernode` (any seed file w
    ```
 4. `/outgoing/client_metrics.json` captures the last `SUMMARY` payload for auditing.
 
-> **Tip:** The SuperNode container shuts down automatically once the SuperLink stops, so you always run the SuperLink pipeline first and tear it down last.
+> **Tip:** The SuperNode container keeps reconnecting automatically while the SuperLink is up, so you always run the SuperLink pipeline first and tear it down last.
 
 ---
 
