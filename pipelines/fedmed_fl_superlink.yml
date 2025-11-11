@@ -16,8 +16,8 @@ plugin_tree:
       fleet_port: 9092
       control_port: 9093
       serverapp_port: 9091
-      rounds: 1
-      total_clients: 1
+      rounds: 3
+      total_clients: 3
       local_epochs: 10
       learning_rate: 0.2
       data_seed: 13
