@@ -19,25 +19,30 @@ def get_version(rel_path: str) -> str:
 
 
 setup(
-    name='pl-flwrServer',
+    name='pl-flwrClient',
     version=get_version('app.py'),
     description='A Flower client ChRIS plugin for distributed federated learning',
     author='BU FedMed Cloud Group',
     author_email='jedelist@bu.edu',
-    url='https://github.com/jedelist/pl-flwrClient',
+    url='https://github.com/EC528-Fall-2025/FedMed-ChRIS/tree/flwr-david/flwrDemo',
     py_modules=['app'],
-    packages==['MNIST_root'],
-    install_requires=['chris_plugin', "flwr==1.8.0", "torch", "torchvision"],
+    packages=['MNIST_root'],
+    install_requires=[
+        "chris_plugin==0.4.0",
+        "flwr==1.8.0",
+        "torch",
+        "torchvision",
+    ],
     license='MIT',
     entry_points={
         'console_scripts': [
-            'commandname = app:main'
+            'flwrClient = app:main'
         ]
     },
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Topic :: Scientific/Engineering',
-        'Topic :: Scientific/Engineering :: Bio-Informatics',
+        'Topic :: Scientific/Engineering :: Federated Learning',
         'Topic :: Scientific/Engineering :: Medical Science Apps.'
     ],
     python_requires=">=3.10",

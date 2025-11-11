@@ -11,7 +11,7 @@ def read_version() -> str:
 
 
 setup(
-    name="fedmed-fl-server",
+    name="pl-flwrServer",
     version=read_version(),
     description="Flower-based coordinator ChRIS plugin for the FedMed demo",
     author="FedMed BU Team",
@@ -19,11 +19,13 @@ setup(
     url="https://github.com/EC528-Fall-2025/FedMed-ChRIS",
     py_modules=["app"],
     install_requires=[
-        "chris_plugin==0.4.0","flwr==1.8.0"],
+        "chris_plugin==0.4.0",
+        "flwr==1.8.0",
+        ],
     license="MIT",
     entry_points={
         "console_scripts": [
-            "fedmed-fl-server = app:main",
+            "flwrServer = app:main",
         ]
     },
     classifiers=[

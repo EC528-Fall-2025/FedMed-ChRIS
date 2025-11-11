@@ -16,7 +16,7 @@
 
 PLUGIN_NAME="$(basename $(dirname $(realpath $0)))"  # name of current directory
 PLUGIN_TITLE='MNIST Flower Client'
-SCRIPT_NAME='commandname'
+SCRIPT_NAME='flwrClient'
 DESCRIPTION='A Flower client ChRIS plugin for distributed federated learning'
 ORGANIZATION='BU'
 EMAIL='jedelist@bu.edu'

@@ -3,11 +3,11 @@
 # FROM ghcr.io/mamba-org/micromamba:1.5.1-focal-cuda-11.3.1
 FROM docker.io/python:3.12.1-slim-bookworm
 
-LABEL org.opencontainers.image.authors="FedMed Demo" \
-      org.opencontainers.image.title="FedMed Flower Server" \
-      org.opencontainers.image.description="ChRIS plugin that launches the Flower coordinator"
+LABEL org.opencontainers.image.authors="FedMed BU" \
+      org.opencontainers.image.title="Flower Federated Learning MNIST Server Plugin" \
+      org.opencontainers.image.description="A Flower server ChRIS plugin for distributed federated learning"
 
-ARG SRCDIR=/usr/local/src/fedmed-fl-server
+ARG SRCDIR=/usr/local/src/app
 WORKDIR ${SRCDIR}
 
 COPY requirements.txt .
@@ -19,4 +19,5 @@ RUN pip install .[${extras_require}] \
     && cd / && rm -rf ${SRCDIR}
 WORKDIR /
 
-CMD ["fedmed-fl-server"]
+#ENTRYPOINT ["flwrServer"]
+CMD ["flwrServer"]

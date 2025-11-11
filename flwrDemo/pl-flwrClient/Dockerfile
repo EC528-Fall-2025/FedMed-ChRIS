@@ -3,9 +3,9 @@
 # FROM ghcr.io/mamba-org/micromamba:1.5.1-focal-cuda-11.3.1
 FROM docker.io/python:3.12.1-slim-bookworm
 
-LABEL org.opencontainers.image.authors="FNNDSC <dev@babyMRI.org>" \
-      org.opencontainers.image.title="ChRIS Plugin Title" \
-      org.opencontainers.image.description="A ChRIS plugin that..."
+LABEL org.opencontainers.image.authors="FEDMED BU <jedelist@bu.edu>" \
+      org.opencontainers.image.title="Flower Federated Learning MNIST Client Plugin" \
+      org.opencontainers.image.description="A Flower client ChRIS plugin for distributed federated learning"
 
 ARG SRCDIR=/usr/local/src/app
 WORKDIR ${SRCDIR}
@@ -19,4 +19,5 @@ RUN pip install ".[${extras_require}]" \
     && cd / && rm -rf ${SRCDIR}
 WORKDIR /
 
-CMD ["commandname"]
+#ENTRYPOINT ["flwrClient"]
+CMD ["flwrClient"]
