@@ -2,9 +2,10 @@
 
 from . import client_app as client_app  # re-export for Flower discovery
 from . import server_app as server_app
+from . import task as task
 
 __all__ = [
-    "core",
+    "task",
     "client_app",
     "server_app",
 ]

@@ -26,6 +26,9 @@ setup(
         "chris_plugin==0.4.0",
         "flwr>=1.23.0,<2",
         "numpy>=1.26,<3",
+        "torch>=2.1.0",
+        "torchvision>=0.16.0",
+        "medmnist>=3.0.1",
     ],
     license="MIT",
     entry_points={

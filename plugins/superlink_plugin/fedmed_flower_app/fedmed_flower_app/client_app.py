@@ -5,14 +5,18 @@ from __future__ import annotations
 import json
 from typing import Any, Dict
 
+import torch
 from flwr.app import Context, Message, MetricRecord, RecordDict
 from flwr.clientapp import ClientApp
 
-from .core import (
-    LocalLogisticRegression,
-    decode_parameters,
-    encode_parameters,
-    load_client_dataset,
+from .task import (
+    DEFAULT_BATCH_SIZE,
+    SimpleCNN,
+    get_model_parameters,
+    load_data,
+    load_model_parameters,
+    train_model,
+    evaluate_model,
 )
 
 CLIENT_SUMMARY_TOKEN = "[fedmed-supernode-app] SUMMARY "
@@ -38,6 +42,14 @@ def _log_metrics(kind: str, partition_id: int, metrics: Dict[str, Any]) -> None:
     print(f"{CLIENT_SUMMARY_TOKEN}{json.dumps(payload)}", flush=True)
 
 
+def _resolve_train_hyperparams(config: Dict[str, Any], run_config: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "batch-size": int(config.get("batch-size", run_config.get("batch-size", DEFAULT_BATCH_SIZE))),
+        "local-epochs": int(config.get("local-epochs", run_config.get("local-epochs", 2))),
+        "learning-rate": float(config.get("learning-rate", run_config.get("learning-rate", 1e-3))),
+    }
+
+
 @app.train()
 def train(msg: Message, context: Context) -> Message:
     """Handle train instructions coming from the ServerApp."""
@@ -47,30 +59,44 @@ def train(msg: Message, context: Context) -> Message:
     data_seed = node_config["data-seed"]
 
     config = msg.content.get("config", {})
-    learning_rate = float(
-        config.get("learning-rate", context.run_config.get("learning-rate", 0.2))
-    )
-    epochs = int(config.get("local-epochs", context.run_config.get("local-epochs", 10)))
+    hyper = _resolve_train_hyperparams(config, context.run_config)
+    batch_size = hyper["batch-size"]
+    local_epochs = hyper["local-epochs"]
+    learning_rate = hyper["learning-rate"]
 
-    dataset = load_client_dataset(partition_id, num_partitions, data_seed)
-    trainer = LocalLogisticRegression(
-        n_features=dataset.x_train.shape[1],
-        learning_rate=learning_rate,
-        epochs=epochs,
+    trainloader, valloader = load_data(
+        partition_id,
+        num_partitions,
+        batch_size=batch_size,
+        seed=data_seed,
     )
-    trainer.set_parameters(decode_parameters(msg.content["arrays"]))
 
-    loss, accuracy = trainer.fit(dataset.x_train, dataset.y_train)
+    net = SimpleCNN()
+    load_model_parameters(net, msg.content["arrays"])
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    train_loss = train_model(
+        net,
+        trainloader,
+        epochs=local_epochs,
+        device=device,
+        lr=learning_rate,
+    )
+    val_loss, val_accuracy = evaluate_model(net, valloader, device)
+
     metrics = {
-        "loss": loss,
-        "accuracy": accuracy,
-        "num-examples": len(dataset.x_train),
+        "num-examples": len(trainloader.dataset),
+        "loss": float(val_loss),
+        "accuracy": float(val_accuracy),
+        "train_loss": float(train_loss),
+        "val_loss": float(val_loss),
+        "val_accuracy": float(val_accuracy),
     }
     _log_metrics("train", partition_id, metrics)
 
     reply = RecordDict(
         {
-            "arrays": encode_parameters(trainer.get_parameters()),
+            "arrays": get_model_parameters(net),
             "metrics": MetricRecord(metrics),
         }
     )
@@ -85,19 +111,25 @@ def evaluate(msg: Message, context: Context) -> Message:
     num_partitions = node_config["num-partitions"]
     data_seed = node_config["data-seed"]
 
-    dataset = load_client_dataset(partition_id, num_partitions, data_seed)
-    trainer = LocalLogisticRegression(
-        n_features=dataset.x_train.shape[1],
-        learning_rate=context.run_config.get("learning-rate", 0.2),
-        epochs=context.run_config.get("local-epochs", 10),
+    batch_size = int(context.run_config.get("batch-size", DEFAULT_BATCH_SIZE))
+    _, valloader = load_data(
+        partition_id,
+        num_partitions,
+        batch_size=batch_size,
+        seed=data_seed,
     )
-    trainer.set_parameters(decode_parameters(msg.content["arrays"]))
-    loss, accuracy = trainer.evaluate(dataset.x_train, dataset.y_train)
+
+    net = SimpleCNN()
+    load_model_parameters(net, msg.content["arrays"])
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    loss, accuracy = evaluate_model(net, valloader, device)
     metrics = {
-        "loss": loss,
-        "accuracy": accuracy,
-        "num-examples": len(dataset.x_train),
+        "num-examples": len(valloader.dataset),
+        "loss": float(loss),
+        "accuracy": float(accuracy),
     }
     _log_metrics("evaluate", partition_id, metrics)
+
     reply = RecordDict({"metrics": MetricRecord(metrics)})
     return Message(content=reply, reply_to=msg)

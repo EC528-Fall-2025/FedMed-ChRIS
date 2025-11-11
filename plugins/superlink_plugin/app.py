@@ -82,7 +82,7 @@ def build_parser() -> ArgumentParser:
     parser.add_argument("--rounds", type=int, default=1, help="federated rounds to run")
     parser.add_argument("--total-clients", type=int, default=1, help="expected number of SuperNodes")
     parser.add_argument("--local-epochs", type=int, default=10, help="local epochs per round")
-    parser.add_argument("--learning-rate", type=float, default=0.2, help="client learning rate")
+    parser.add_argument("--learning-rate", type=float, default=0.001, help="client learning rate")
     parser.add_argument("--data-seed", type=int, default=13, help="seed for synthetic data generation")
     parser.add_argument("--fraction-evaluate", type=float, default=1.0, help="fraction of clients used for evaluation")
     parser.add_argument("--federation-name", default=DEFAULT_FEDERATION, help="Flower federation name from the pyproject")
