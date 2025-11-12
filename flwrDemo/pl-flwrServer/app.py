@@ -14,6 +14,10 @@ from chris_plugin import chris_plugin
 
 __version__ = "0.1.0"
 
+DISPLAY_TITLE = r"""
+MNIST Flower Server
+"""
+
 DEFAULT_HOST = "0.0.0.0"
 DEFAULT_PORT = 9091
 DEFAULT_ROUNDS = 1
@@ -136,13 +140,13 @@ def handle_signals() -> None:
 
 @chris_plugin(
     parser=parser,
-    title="FedMed Flower Server",
+    title="MNIST Flower Server",
     category="Federated Learning",
     min_memory_limit="200Mi",
     min_cpu_limit="500m",
 )
 def main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
-    del inputdir  # network-based plugin; no file inputs yet
+    del inputdir  # network-based plugin no file inputs 
     handle_signals()
     address = f"{options.host}:{options.port}"
     summary = run_server(address, rounds=options.rounds, expected_clients=options.expected_clients)

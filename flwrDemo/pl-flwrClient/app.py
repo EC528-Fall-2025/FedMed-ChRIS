@@ -78,7 +78,7 @@ def _mnist_partition_loaders(
 ) -> ClientLoaders:
     """Create train/test loaders for a single logical client.
 
-    Training data is partitioned across `total_clients` evenly.
+    MNIST Training data is partitioned across `total_clients` evenly.
     Test data is shared across all clients.
     Assumes MNIST already exists in `data_root` (MNIST_root/data).
     """
@@ -273,7 +273,7 @@ def run_client(
         data_root=data_root,
     )
 
-    model = SimpleCNN().to(device)
+    model = SimpleCNN().to(device) # configurable architecture
 
     client = MnistClient(
         model=model,
@@ -294,6 +294,46 @@ def run_client(
 
     return client.latest_metrics()
 
+from typing import Optional
+
+# Debugging miniChRIS dir structure
+def resolve_mnist_root(inputdir: Path, data_root_opt: Optional[str]) -> Path:
+    """
+    Resolve the MNIST root directory.
+
+    1. If data_root_opt is given try inputdir / data_root_opt (if relative)
+       or data_root_opt (if absolute). If it contains MNIST/raw, use that.
+    2. Otherwise, or if that path doesn't contain MNIST/raw, scan inputdir
+       for any directory that has MNIST/raw and use its parent as root.
+    """
+    # 1. Try user-provided data_root if given
+    if data_root_opt:
+        data_root = Path(data_root_opt)
+        if not data_root.is_absolute():
+            data_root = inputdir / data_root
+        raw_folder = data_root / "MNIST" / "raw"
+        print(f"[mnist-fl-client] trying user data_root={data_root}", flush=True)
+        if raw_folder.exists():
+            print(f"[mnist-fl-client] using user data_root={data_root}", flush=True)
+            return data_root
+        else:
+            print(f"[mnist-fl-client] user data_root has no MNIST/raw, will auto-search", flush=True)
+
+    # 2. Auto-detect: look for any .../MNIST/raw under inputdir
+    for p in inputdir.rglob("MNIST"):
+        raw = p / "raw"
+        if raw.exists():
+            root = p.parent
+            print(f"[mnist-fl-client] auto-detected MNIST root: {root}", flush=True)
+            return root
+
+    # 3. Fail if nothing found
+    raise RuntimeError(
+        f"Could not find MNIST/raw under {inputdir}. "
+        f"Check how the dataset was copied into the feed."
+    )
+
+
 
 @chris_plugin(
     parser=parser,
@@ -305,21 +345,20 @@ def run_client(
 )
 def main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
     # Network-based plugin, no file inputs yet
-    del inputdir
 
     if options.total_clients <= 0:
         raise ValueError("total-clients must be >= 1")
     if options.cid < 0 or options.cid >= options.total_clients:
         raise ValueError("cid must be in [0, total-clients-1]")
 
-    # Where to cache MNIST inside the container
-    data_root = Path(options.data_root)
-    data_root.mkdir(parents=True, exist_ok=True)
+    # Resolve MNIST root in ChRIS or local
+    data_root = resolve_mnist_root(inputdir, options.data_root)
+    print(f"[mnist-fl-client:{options.cid}] final data_root={data_root}", flush=True)
 
     # NETWORKING
     address = f"{options.server_host}:{options.server_port}"
 
-    # Launch
+    # Launch the client
     metrics = run_client(
         server_address=address,
         client_id=options.cid,

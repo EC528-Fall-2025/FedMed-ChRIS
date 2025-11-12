@@ -15,7 +15,7 @@
 # ----------------------------------------
 
 PLUGIN_NAME="$(basename $(dirname $(realpath $0)))"  # name of current directory
-PLUGIN_TITLE='My ChRIS Plugin'
+PLUGIN_TITLE="MNIST Flower Server"
 SCRIPT_NAME='flwrServer'
 DESCRIPTION='A ChRIS plugin to do something awesome'
 ORGANIZATION='FNNDSC'

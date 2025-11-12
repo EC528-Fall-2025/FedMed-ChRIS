@@ -109,7 +109,7 @@ docker build -t jedelist/pl-flwr-server:latest .
 
 # OR 
 
-docker build -t pl-flwr-server:latest .
+docker build -t jedelist/pl-flwr-server:latest .
 ```
 
 ### 2. Create Local Docker Network:
@@ -124,7 +124,7 @@ docker network create flwr-net
 ```bash
 mkdir -p /tmp/fl_server_in /tmp/fl_server_out
 
-docker run --rm \                                               
+docker run --rm \
   --name flwr-server \
   --network flwr-net \
   -v /tmp/fl_server_in:/in \
@@ -209,3 +209,22 @@ docker network prune
 
 docker network rm flwr-net
 ``` 
+
+### Running in miniChRIS:
+
+Once the local images have been registered in `chrisomatic.yaml` file, open the minichris UI in a browser and log in as the admin user. 
+
+#### 1. Server CLI:
+
+Use the following CL arguments to launch the server pipeline (from an empty feed):
+
+```bash
+--host 0.0.0.0 --port 9091 --rounds 3 --expected-clients 2
+```
+
+#### 2. Client CLI:
+
+Only upload /data to the feed, not MNIST_root, then use the following command line arguments to launch the client pipelines:
+```bash
+--cid 0 --total-clients 2 --server-host 172.17.0.2 --server-port 9091 --learning-rate 0.01 --epochs 1 --batch-size 64 --num-workers 2 --seed 13 --device auto --data-root data
+```
