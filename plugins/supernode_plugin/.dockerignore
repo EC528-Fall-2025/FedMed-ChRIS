@@ -1,3 +1,8 @@
+.git/
+.github/
+.dockerignore
+Dockerfile
+
 *~
 *.DS_Store
 *.egg-info/
@@ -8,6 +13,6 @@ __pycache__/
 .idea/
 .vscode/
 
-venv/
+examples/
 
-refresh_image.sh
+venv/
