@@ -11,21 +11,24 @@ def read_version() -> str:
 
 
 setup(
-    name="fedmed-fl-server",
+    name="fedmed-fl-supernode",
     version=read_version(),
-    description="Flower-based coordinator ChRIS plugin for the FedMed demo",
+    description="Flower client ChRIS plugin used in the FedMed demo",
     author="FedMed BU Team",
     author_email="rpsmith@bu.edu",
     url="https://github.com/EC528-Fall-2025/FedMed-ChRIS",
     py_modules=["app"],
     install_requires=[
         "chris_plugin==0.4.0",
-        "flwr==1.8.0",
+        "flwr>=1.23.0,<2",
+        "torch>=2.1.0",
+        "torchvision>=0.16.0",
+        "medmnist>=3.0.1",
     ],
     license="MIT",
     entry_points={
         "console_scripts": [
-            "fedmed-fl-server = app:main",
+            "fedmed-fl-supernode = app:main",
         ]
     },
     classifiers=[
