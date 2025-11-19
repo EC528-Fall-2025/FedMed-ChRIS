@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+from pathlib import Path
 from typing import Any, Dict
 
 import torch
@@ -20,6 +22,7 @@ from .task import (
 )
 
 SERVER_SUMMARY_TOKEN = "[fedmed-superlink-app] SUMMARY "
+CKPT_ENV_VAR = "FEDMED_OUTPUT_CKPT"
 
 app = ServerApp()
 
@@ -48,7 +51,24 @@ def _metrics_to_dict(metrics: Dict[int, MetricRecord]) -> Dict[int, Dict[str, An
     return {round_id: dict(record) for round_id, record in metrics.items()}
 
 
+def _write_checkpoint(arrays: ArrayRecord) -> str | None:
+    ckpt_path = os.environ.get(CKPT_ENV_VAR)
+    if not ckpt_path:
+        return None
+    try:
+        path = Path(ckpt_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        net = SimpleCNN()
+        load_model_parameters(net, arrays)
+        torch.save(net.state_dict(), path)
+        return str(path)
+    except Exception as exc:
+        print(f"[fedmed-superlink-app] checkpoint-error: {exc}", flush=True)
+        return None
+
+
 def _emit_summary(result, context: Context) -> Dict[str, Any]:  # type: ignore[override]
+    checkpoint_path = _write_checkpoint(result.arrays)
     summary = {
         "run_id": context.run_id,
         "rounds": context.run_config.get("num-server-rounds"),
@@ -57,6 +77,8 @@ def _emit_summary(result, context: Context) -> Dict[str, Any]:  # type: ignore[o
         "evaluate_metrics": _metrics_to_dict(result.evaluate_metrics_clientapp),
         "server_metrics": _metrics_to_dict(result.evaluate_metrics_serverapp),
     }
+    if checkpoint_path:
+        summary["checkpoint"] = checkpoint_path
     print(f"{SERVER_SUMMARY_TOKEN}{json.dumps(summary)}", flush=True)
     return summary
 

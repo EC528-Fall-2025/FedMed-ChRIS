@@ -30,6 +30,7 @@ DEFAULT_CONTROL_PORT = 9093
 DEFAULT_SERVERAPP_PORT = 9091
 DEFAULT_STATE_DIR = Path("/tmp/fedmed-flwr")
 DEFAULT_SUMMARY = "server_summary.json"
+DEFAULT_WEIGHTS = "server_final.ckpt"
 DEFAULT_FEDERATION = "fedmed-local"
 IMAGE_TAG = f"docker.io/fedmed/fl-superlink:{__version__}"
 REPO_URL = "https://github.com/EC528-Fall-2025/FedMed-ChRIS"
@@ -325,6 +326,7 @@ def _plugin_main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
     addresses = _build_addresses(options)
     run_cfg = _build_run_config(options)
     env, flwr_home = _prepare_environment(options.state_dir)
+    env["FEDMED_OUTPUT_CKPT"] = str((outputdir / DEFAULT_WEIGHTS).resolve())
 
     fleet_addr = addresses.fleet
     print(
