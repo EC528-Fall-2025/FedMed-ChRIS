@@ -4,7 +4,7 @@ This plugin packages a Flower SuperNode inside a ChRIS-friendly container. Run t
 
 ## Build
 ```bash
-docker build -t fedmed/fl-supernode .
+docker build -t fedmed/pl-supernode .
 ```
 
 ## Run (example)
@@ -12,8 +12,8 @@ docker build -t fedmed/fl-supernode .
 docker run --rm --name fedmed-supernode --network fedmed-net \
   -v $(pwd)/demo/client-in:/incoming:ro \
   -v $(pwd)/demo/client-out:/outgoing:rw \
-  fedmed/fl-supernode \
-    fedmed-fl-supernode --cid 0 --total-clients 1 \
+  fedmed/pl-supernode \
+    fedmed-pl-supernode --cid 0 --total-clients 1 \
     --superlink-host ${FEDMED_SUPERLINK_IP} --superlink-port 9092 \
     /incoming /outgoing
 ```

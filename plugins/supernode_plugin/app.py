@@ -23,7 +23,7 @@ DEFAULT_SUPERLINK_PORT = 9092
 DEFAULT_CLIENTAPP_PORT = 9094
 DEFAULT_STATE_DIR = Path("/tmp/fedmed-flwr-node")
 DEFAULT_METRICS_FILE = "client_metrics.json"
-IMAGE_TAG = f"docker.io/fedmed/fl-supernode:{__version__}"
+IMAGE_TAG = f"docker.io/fedmed/pl-supernode:{__version__}"
 REPO_URL = "https://github.com/EC528-Fall-2025/FedMed-ChRIS"
 
 Process = subprocess.Popen
@@ -61,7 +61,7 @@ def build_parser() -> ArgumentParser:
     )
     parser.add_argument("--cid", type=int, default=0, help="client id (partition id)")
     parser.add_argument("--total-clients", type=int, default=1, help="logical clients")
-    parser.add_argument("--superlink-host", default="fedmed-fl-superlink", help="SuperLink host/IP")
+    parser.add_argument("--superlink-host", default="fedmed-pl-superlink", help="SuperLink host/IP")
     parser.add_argument("--superlink-port", type=int, default=DEFAULT_SUPERLINK_PORT, help="SuperLink Fleet API port")
     parser.add_argument("--clientapp-host", default="0.0.0.0", help="ClientAppIo bind host")
     parser.add_argument("--clientapp-port", type=int, default=DEFAULT_CLIENTAPP_PORT, help="ClientAppIo bind port")
@@ -80,7 +80,7 @@ def build_parser() -> ArgumentParser:
         "-V",
         "--version",
         action="version",
-        version=f"fedmed-fl-supernode {__version__}",
+        version=f"fedmed-pl-supernode {__version__}",
     )
     return parser
 
@@ -108,13 +108,13 @@ def _cleanup_children() -> None:
         try:
             _terminate_process(proc)
         except Exception as exc:  # pragma: no cover - defensive
-            print(f"[fedmed-fl-supernode] failed to terminate {proc.args}: {exc}", flush=True)
+            print(f"[fedmed-pl-supernode] failed to terminate {proc.args}: {exc}", flush=True)
     CHILDREN.clear()
 
 
 def handle_signals() -> None:
     def _handle(signum, _frame):  # type: ignore[override]
-        print(f"\n[fedmed-fl-supernode] received signal {signum}, shutting down...", flush=True)
+        print(f"\n[fedmed-pl-supernode] received signal {signum}, shutting down...", flush=True)
         _cleanup_children()
         raise SystemExit(1)
 
@@ -154,7 +154,7 @@ def _run_supernode(options: Namespace, env: dict[str, str]) -> Dict[str, Any]:
         "--node-config",
         node_config.as_flag(),
     ]
-    print(f"[fedmed-fl-supernode] starting SuperNode: {' '.join(cmd)}", flush=True)
+    print(f"[fedmed-pl-supernode] starting SuperNode: {' '.join(cmd)}", flush=True)
 
     metrics: Dict[str, Any] | None = None
 
@@ -165,7 +165,7 @@ def _run_supernode(options: Namespace, env: dict[str, str]) -> Dict[str, Any]:
             try:
                 parsed = json.loads(payload)
             except json.JSONDecodeError as exc:
-                print(f"[fedmed-fl-supernode] failed to parse metrics: {exc}", flush=True)
+                print(f"[fedmed-pl-supernode] failed to parse metrics: {exc}", flush=True)
                 return
             if parsed.get("kind") == "train":
                 metrics = parsed
@@ -258,11 +258,11 @@ def _plugin_main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
 
     metrics_path = outputdir / options.metrics_file
     metrics_path.write_text(json.dumps(summary, indent=2))
-    print(f"[fedmed-fl-supernode:{options.cid}] wrote metrics to {metrics_path}", flush=True)
+    print(f"[fedmed-pl-supernode:{options.cid}] wrote metrics to {metrics_path}", flush=True)
 
     if not options.keep_state:
         shutil.rmtree(flwr_home, ignore_errors=True)
-        print(f"[fedmed-fl-supernode:{options.cid}] cleaned {flwr_home}", flush=True)
+        print(f"[fedmed-pl-supernode:{options.cid}] cleaned {flwr_home}", flush=True)
 
 
 def main(*args, **kwargs):
@@ -280,7 +280,7 @@ def emit_plugin_json() -> None:
         "--dock-image",
         IMAGE_TAG,
         "--name",
-        "fl-supernode",
+        "pl-supernode",
         "--public-repo",
         REPO_URL,
     ]

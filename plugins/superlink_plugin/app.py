@@ -32,7 +32,7 @@ DEFAULT_STATE_DIR = Path("/tmp/fedmed-flwr")
 DEFAULT_SUMMARY = "server_summary.json"
 DEFAULT_WEIGHTS = "server_final.ckpt"
 DEFAULT_FEDERATION = "fedmed-local"
-IMAGE_TAG = f"docker.io/fedmed/fl-superlink:{__version__}"
+IMAGE_TAG = f"docker.io/fedmed/pl-superlink:{__version__}"
 REPO_URL = "https://github.com/EC528-Fall-2025/FedMed-ChRIS"
 
 Process = subprocess.Popen
@@ -96,7 +96,7 @@ def build_parser() -> ArgumentParser:
         "-V",
         "--version",
         action="version",
-        version=f"fedmed-fl-superlink {__version__}",
+        version=f"fedmed-pl-superlink {__version__}",
     )
     return parser
 
@@ -151,7 +151,7 @@ def _cleanup_children() -> None:
         try:
             _terminate_process(proc)
         except Exception as exc:  # pragma: no cover - defensive
-            print(f"[fedmed-fl-superlink] failed to terminate {proc.args}: {exc}", flush=True)
+            print(f"[fedmed-pl-superlink] failed to terminate {proc.args}: {exc}", flush=True)
     CHILDREN.clear()
 
 
@@ -205,7 +205,7 @@ def _prepare_environment(state_dir: str) -> tuple[dict[str, str], Path]:
 
 def handle_signals() -> None:
     def _handle(signum, _frame):  # type: ignore[override]
-        print(f"\n[fedmed-fl-superlink] received signal {signum}, cleaning up...", flush=True)
+        print(f"\n[fedmed-pl-superlink] received signal {signum}, cleaning up...", flush=True)
         _cleanup_children()
         raise SystemExit(1)
 
@@ -222,7 +222,7 @@ def _launch_superlink(addresses: SuperLinkAddresses, env: dict[str, str]) -> Pro
         f"--control-api-address={addresses.control}",
         f"--serverappio-api-address={addresses.serverapp}",
     ]
-    print(f"[fedmed-fl-superlink] starting SuperLink: {' '.join(cmd)}", flush=True)
+    print(f"[fedmed-pl-superlink] starting SuperLink: {' '.join(cmd)}", flush=True)
     proc = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -268,9 +268,9 @@ def _run_federation(
             try:
                 summary = json.loads(payload)
             except json.JSONDecodeError as exc:
-                print(f"[fedmed-fl-superlink] failed to parse summary: {exc}", flush=True)
+                print(f"[fedmed-pl-superlink] failed to parse summary: {exc}", flush=True)
 
-    print(f"[fedmed-fl-superlink] launching Flower run: {' '.join(cmd)}", flush=True)
+    print(f"[fedmed-pl-superlink] launching Flower run: {' '.join(cmd)}", flush=True)
     proc = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -330,19 +330,19 @@ def _plugin_main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
 
     fleet_addr = addresses.fleet
     print(
-        f"[fedmed-fl-superlink] SuperNodes should target Fleet API at {fleet_addr}",
+        f"[fedmed-pl-superlink] SuperNodes should target Fleet API at {fleet_addr}",
         flush=True,
     )
     reachable_ips = _discover_ipv4_addresses()
     if reachable_ips:
         print(
-            "[fedmed-fl-superlink] reachable IPv4 addresses: "
+            "[fedmed-pl-superlink] reachable IPv4 addresses: "
             + ", ".join(reachable_ips),
             flush=True,
         )
     else:
         print(
-            "[fedmed-fl-superlink] unable to auto-detect host IPs; clients must be pointed at the compute-node address manually.",
+            "[fedmed-pl-superlink] unable to auto-detect host IPs; clients must be pointed at the compute-node address manually.",
             flush=True,
         )
 
@@ -356,11 +356,11 @@ def _plugin_main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
 
     summary_path = outputdir / options.summary_file
     summary_path.write_text(json.dumps(summary, indent=2))
-    print(f"[fedmed-fl-superlink] wrote summary to {summary_path}", flush=True)
+    print(f"[fedmed-pl-superlink] wrote summary to {summary_path}", flush=True)
 
     if not options.keep_state:
         shutil.rmtree(flwr_home, ignore_errors=True)
-        print(f"[fedmed-fl-superlink] cleaned {flwr_home}", flush=True)
+        print(f"[fedmed-pl-superlink] cleaned {flwr_home}", flush=True)
 
 
 def main(*args, **kwargs):
@@ -378,7 +378,7 @@ def emit_plugin_json() -> None:
         "--dock-image",
         IMAGE_TAG,
         "--name",
-        "fl-superlink",
+        "pl-superlink",
         "--public-repo",
         REPO_URL,
     ]

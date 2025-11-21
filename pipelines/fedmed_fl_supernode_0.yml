@@ -9,7 +9,7 @@ category: Federated Learning
 locked: false
 plugin_tree:
   - title: run-flower-client
-    plugin: fl-supernode v0.2.0
+    plugin: pl-supernode v0.2.0
     previous: ~
     plugin_parameter_defaults:
       cid: 0

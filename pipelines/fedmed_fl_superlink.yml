@@ -9,7 +9,7 @@ category: Federated Learning
 locked: false
 plugin_tree:
   - title: start-flower-server
-    plugin: fl-superlink v0.2.0
+    plugin: pl-superlink v0.2.0
     previous: ~
     plugin_parameter_defaults:
       host: 0.0.0.0
