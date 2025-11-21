@@ -11,7 +11,7 @@ def read_version() -> str:
 
 
 setup(
-    name="fedmed-fl-superlink",
+    name="fedmed-pl-superlink",
     version=read_version(),
     description="Flower-based coordinator ChRIS plugin for the FedMed demo",
     author="FedMed BU Team",
@@ -33,7 +33,7 @@ setup(
     license="MIT",
     entry_points={
         "console_scripts": [
-            "fedmed-fl-superlink = app:main",
+            "fedmed-pl-superlink = app:main",
         ]
     },
     classifiers=[

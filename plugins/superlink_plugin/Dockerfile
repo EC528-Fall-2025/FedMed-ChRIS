@@ -7,7 +7,7 @@ LABEL org.opencontainers.image.authors="FedMed Demo" \
       org.opencontainers.image.title="FedMed Flower Server" \
       org.opencontainers.image.description="ChRIS plugin that launches the Flower coordinator"
 
-ARG SRCDIR=/usr/local/src/fedmed-fl-server
+ARG SRCDIR=/usr/local/src/fedmed-pl-server
 WORKDIR ${SRCDIR}
 
 COPY requirements.txt .
@@ -19,4 +19,4 @@ RUN pip install .[${extras_require}] \
     && cd / && rm -rf ${SRCDIR}
 WORKDIR /
 
-CMD ["fedmed-fl-superlink"]
+CMD ["fedmed-pl-superlink"]

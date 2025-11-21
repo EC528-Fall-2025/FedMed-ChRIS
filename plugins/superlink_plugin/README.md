@@ -4,7 +4,7 @@ This folder contains the complete _ChRIS_ plugin that launches the Flower SuperL
 
 ## Build
 ```bash
-docker build -t fedmed/fl-superlink .
+docker build -t fedmed/pl-superlink .
 ```
 
 ## Run (example)
@@ -12,8 +12,8 @@ docker build -t fedmed/fl-superlink .
 docker run --rm --name fedmed-superlink --network fedmed-net \
   -v $(pwd)/demo/server-in:/incoming:ro \
   -v $(pwd)/demo/server-out:/outgoing:rw \
-  fedmed/fl-superlink \
-    fedmed-fl-superlink --host 0.0.0.0 --port 9091 --rounds 1 --expected-clients 1 \
+  fedmed/pl-superlink \
+    fedmed-pl-superlink --host 0.0.0.0 --port 9091 --rounds 1 --expected-clients 1 \
     /incoming /outgoing
 ```
 

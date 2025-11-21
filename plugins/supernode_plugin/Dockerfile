@@ -7,7 +7,7 @@ LABEL org.opencontainers.image.authors="FedMed Demo" \
       org.opencontainers.image.title="FedMed Flower Client" \
       org.opencontainers.image.description="ChRIS plugin that runs a standalone trainer"
 
-ARG SRCDIR=/usr/local/src/fedmed-fl-client
+ARG SRCDIR=/usr/local/src/fedmed-pl-client
 WORKDIR ${SRCDIR}
 
 COPY requirements.txt .
@@ -19,4 +19,4 @@ RUN pip install .[${extras_require}] \
     && cd / && rm -rf ${SRCDIR}
 WORKDIR /
 
-CMD ["fedmed-fl-supernode"]
+CMD ["fedmed-pl-supernode"]

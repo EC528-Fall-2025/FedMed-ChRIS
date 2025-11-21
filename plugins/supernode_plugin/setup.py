@@ -11,7 +11,7 @@ def read_version() -> str:
 
 
 setup(
-    name="fedmed-fl-supernode",
+    name="fedmed-pl-supernode",
     version=read_version(),
     description="Flower client ChRIS plugin used in the FedMed demo",
     author="FedMed BU Team",
@@ -28,7 +28,7 @@ setup(
     license="MIT",
     entry_points={
         "console_scripts": [
-            "fedmed-fl-supernode = app:main",
+            "fedmed-pl-supernode = app:main",
         ]
     },
     classifiers=[
