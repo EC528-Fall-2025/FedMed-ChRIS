@@ -176,16 +176,6 @@ def _stage_flower_app(state_dir: Path) -> tuple[Path, Callable[[], None]]:
     return project_dir, _cleanup
 
 
-def _log_project_tree(project_dir: Path) -> None:
-    """Print a shallow tree of the staged Flower app for debugging."""
-    print("[fedmed-pl-superlink] staged Flower app contents:", flush=True)
-    for path in sorted(project_dir.rglob("*")):
-        rel = path.relative_to(project_dir)
-        # Limit noisy binary output; we only care that the file exists.
-        suffix = "/" if path.is_dir() else ""
-        print(f"  {rel}{suffix}", flush=True)
-
-
 def _build_run_config(options: Namespace) -> FlowerRunConfig:
     """Extract the Flower run override settings from plugin options."""
     return FlowerRunConfig(
@@ -264,7 +254,6 @@ def _run_federation(
 ) -> dict[str, Any]:
     """Bundle the Flower App, run `flwr run`, and return the parsed summary."""
     staged_app_dir, cleanup_app = _stage_flower_app(Path(env["FLWR_HOME"]))
-    _log_project_tree(staged_app_dir)
     run_config = run_cfg.as_override_string()
     fed_config = f"address='{addresses.control}'"
     cmd: List[str] = [
