@@ -48,4 +48,4 @@ default = "fedmed-local"
 
 [tool.flwr.federations.fedmed-local]
 address = "127.0.0.1:9093"
-insecure = true
+root-certificates = "./certificates/ca.crt"

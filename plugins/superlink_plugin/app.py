@@ -217,10 +217,12 @@ def _launch_superlink(addresses: SuperLinkAddresses, env: dict[str, str]) -> Pro
     """Start the long-lived Flower SuperLink services inside this container."""
     cmd: List[str] = [
         "flower-superlink",
-        "--insecure",
         f"--fleet-api-address={addresses.fleet}",
         f"--control-api-address={addresses.control}",
         f"--serverappio-api-address={addresses.serverapp}",
+        "--ssl-ca-certfile certificates/ca.crt",
+        "--ssl-certfile certificates/server.pem",
+        "--ssl-keyfile certificates/server.key"
     ]
     print(f"[fedmed-pl-superlink] starting SuperLink: {' '.join(cmd)}", flush=True)
     proc = subprocess.Popen(
