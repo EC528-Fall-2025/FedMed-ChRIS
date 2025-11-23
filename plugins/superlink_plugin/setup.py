@@ -21,7 +21,7 @@ setup(
     packages=["fedmed_flower_app"],
     package_dir={"fedmed_flower_app": "fedmed_flower_app/fedmed_flower_app"},
     include_package_data=True,
-    package_data={"fedmed_flower_app": ["pyproject.toml"]},
+    package_data={"fedmed_flower_app": ["pyproject.toml", "certificates/*"]},
     install_requires=[
         "chris_plugin==0.4.0",
         "flwr[simulation]>=1.23.0,<2",

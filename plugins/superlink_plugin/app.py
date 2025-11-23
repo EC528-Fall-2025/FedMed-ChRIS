@@ -163,6 +163,9 @@ def _stage_flower_app(state_dir: Path) -> tuple[Path, Callable[[], None]]:
     project_dir = staging_root / "project"
     package_dir = project_dir / APP_PACKAGE
     shutil.copytree(APP_DIR, package_dir)
+    certs_src = APP_DIR / "certificates"
+    if certs_src.exists():
+        shutil.copytree(certs_src, project_dir / "certificates")
     pyproject_src = APP_DIR / "pyproject.toml"
     if pyproject_src.exists():
         shutil.copy(pyproject_src, project_dir / "pyproject.toml")
@@ -171,6 +174,16 @@ def _stage_flower_app(state_dir: Path) -> tuple[Path, Callable[[], None]]:
         shutil.rmtree(staging_root, ignore_errors=True)
 
     return project_dir, _cleanup
+
+
+def _log_project_tree(project_dir: Path) -> None:
+    """Print a shallow tree of the staged Flower app for debugging."""
+    print("[fedmed-pl-superlink] staged Flower app contents:", flush=True)
+    for path in sorted(project_dir.rglob("*")):
+        rel = path.relative_to(project_dir)
+        # Limit noisy binary output; we only care that the file exists.
+        suffix = "/" if path.is_dir() else ""
+        print(f"  {rel}{suffix}", flush=True)
 
 
 def _build_run_config(options: Namespace) -> FlowerRunConfig:
@@ -215,14 +228,18 @@ def handle_signals() -> None:
 
 def _launch_superlink(addresses: SuperLinkAddresses, env: dict[str, str]) -> Process:
     """Start the long-lived Flower SuperLink services inside this container."""
+    cert_dir = APP_DIR / "certificates"
     cmd: List[str] = [
         "flower-superlink",
         f"--fleet-api-address={addresses.fleet}",
         f"--control-api-address={addresses.control}",
         f"--serverappio-api-address={addresses.serverapp}",
-        "--ssl-ca-certfile certificates/ca.crt",
-        "--ssl-certfile certificates/server.pem",
-        "--ssl-keyfile certificates/server.key"
+        "--ssl-ca-certfile",
+        str(cert_dir / "ca.crt"),
+        "--ssl-certfile",
+        str(cert_dir / "server.pem"),
+        "--ssl-keyfile",
+        str(cert_dir / "server.key"),
     ]
     print(f"[fedmed-pl-superlink] starting SuperLink: {' '.join(cmd)}", flush=True)
     proc = subprocess.Popen(
@@ -247,8 +264,9 @@ def _run_federation(
 ) -> dict[str, Any]:
     """Bundle the Flower App, run `flwr run`, and return the parsed summary."""
     staged_app_dir, cleanup_app = _stage_flower_app(Path(env["FLWR_HOME"]))
+    _log_project_tree(staged_app_dir)
     run_config = run_cfg.as_override_string()
-    fed_config = f"address='{addresses.control}' insecure=true"
+    fed_config = f"address='{addresses.control}'"
     cmd: List[str] = [
         "flwr",
         "run",
