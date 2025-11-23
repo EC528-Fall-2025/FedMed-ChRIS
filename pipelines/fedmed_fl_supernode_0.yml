@@ -1,6 +1,6 @@
 ---
 authors: FedMed Team <dev@fedmed.org>
-name: "FedMed Flower SuperNode 2 v0.2.0"
+name: "FedMed Flower SuperNode 0 v0.2.0"
 description:
   Runs a single Flower SuperNode inside CUBE. Launch this pipeline once per
   participating site while the FedMed Flower SuperLink pipeline is still
@@ -14,7 +14,7 @@ plugin_tree:
     plugin_parameter_defaults:
       cid: 0
       total_clients: 3
-      superlink_host: 10.239.108.61
+      superlink_host: 10.193.215.81
       superlink_port: 9092
       clientapp_host: 0.0.0.0
       clientapp_port: 9094
