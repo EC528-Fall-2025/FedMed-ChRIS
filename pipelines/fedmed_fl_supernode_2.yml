@@ -14,8 +14,8 @@ plugin_tree:
     plugin_parameter_defaults:
       cid: 2
       total_clients: 3
-      superlink_host: 10.103.82.45
-      superlink_port: 9092
+      ssuperlink_host: bastion.example.com   # <-- bastion host
+      superlink_port: 19092                  # <-- bastion_fleet_port from superlink plugin
       clientapp_host: 0.0.0.0
       clientapp_port: 9094
       data_seed: 13

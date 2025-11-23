@@ -92,6 +92,44 @@ def build_parser() -> ArgumentParser:
     parser.add_argument("--keep-state", action="store_true", help="keep the Flower state directory after finishing")
     parser.add_argument("--startup-delay", type=float, default=3.0, help="seconds to wait for SuperLink to boot")
     parser.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
+
+    # NEW optional bastion-related arguments (for reverse tunnelling)
+    parser.add_argument("--bastion-host", default=None, help="SSH bastion hostname for reverse tunneling")
+    parser.add_argument("--bastion-user", default=None, help="SSH user on bastion")
+    parser.add_argument("--bastion-port", type=int, default=22, help="SSH port on bastion")
+
+    parser.add_argument(
+        "--bastion-key",
+        type=str,
+        default="/incoming/id_ed25519",
+        help="path to SSH private key inside container",
+    )
+    parser.add_argument(
+        "--bastion-known-hosts",
+        type=str,
+        default="/incoming/known_hosts",
+        help="path to known_hosts file; if missing, host key checking is relaxed",
+    )
+
+    parser.add_argument(
+        "--bastion-fleet-port",
+        type=int,
+        default=19092,
+        help="remote port on bastion forwarding to Fleet API",
+    )
+    parser.add_argument(
+        "--bastion-control-port",
+        type=int,
+        default=19093,
+        help="remote port on bastion forwarding to Control API",
+    )
+    parser.add_argument(
+        "--bastion-serverapp-port",
+        type=int,
+        default=19091,
+        help="remote port on bastion forwarding to ServerAppIo",
+    )
+
     parser.add_argument(
         "-V",
         "--version",
@@ -99,6 +137,7 @@ def build_parser() -> ArgumentParser:
         version=f"fedmed-pl-superlink {__version__}",
     )
     return parser
+
 
 
 parser = build_parser()
@@ -201,6 +240,65 @@ def _prepare_environment(state_dir: str) -> tuple[dict[str, str], Path]:
     flwr_home.mkdir(parents=True, exist_ok=True)
     env["FLWR_HOME"] = str(flwr_home)
     return env, flwr_home
+
+# Added for reverse tunelling
+def _maybe_open_reverse_tunnels(
+    options: Namespace,
+    fleet_local: str,
+    control_local: str,
+    serverapp_local: str,
+) -> Process | None:
+    """Optionally open reverse SSH tunnels from this container to a bastion.
+
+    Exposes bastion:<bastion_*_port> -> container:<local ports>.
+    If bastion_host or bastion_user is unset, this is a no-op.
+    """
+    bastion_host = options.bastion_host
+    bastion_user = options.bastion_user
+    if not bastion_host or not bastion_user:
+        return None
+
+    key_path = Path(options.bastion_key)
+    known_hosts_path = Path(options.bastion_known_hosts)
+
+    ssh_opts: list[str] = [
+        "-o", "ServerAliveInterval=30",
+        "-o", "ServerAliveCountMax=3",
+        "-o", "ExitOnForwardFailure=yes",
+    ]
+
+    if known_hosts_path.exists():
+        ssh_opts.extend([
+            "-o", f"UserKnownHostsFile={known_hosts_path}",
+            "-o", "StrictHostKeyChecking=yes",
+        ])
+    else:
+        # For early testing only; tighten this in production by providing known_hosts.
+        ssh_opts.extend(["-o", "StrictHostKeyChecking=no"])
+
+    cmd: list[str] = [
+        "autossh", "-M", "0", "-N",
+        *ssh_opts,
+        "-p", str(options.bastion_port),
+        "-i", str(key_path),
+        "-R", f"0.0.0.0:{options.bastion_fleet_port}:{fleet_local}",
+        "-R", f"0.0.0.0:{options.bastion_control_port}:{control_local}",
+        "-R", f"0.0.0.0:{options.bastion_serverapp_port}:{serverapp_local}",
+        f"{bastion_user}@{bastion_host}",
+    ]
+
+    print(f"[fedmed-pl-superlink] opening reverse tunnels: {' '.join(cmd)}", flush=True)
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    _register_child(proc)
+    threading.Thread(target=_stream_lines, args=(proc.stdout, "autossh"), daemon=True).start()
+    threading.Thread(target=_stream_lines, args=(proc.stderr, "autossh"), daemon=True).start()
+    return proc
+
 
 
 def handle_signals() -> None:
@@ -345,7 +443,9 @@ def _plugin_main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
             "[fedmed-pl-superlink] unable to auto-detect host IPs; clients must be pointed at the compute-node address manually.",
             flush=True,
         )
-
+    # New for reverse ssh
+    _maybe_open_reverse_tunnels(options, fleet_local, control_local, serverapp_local)
+    
     superlink = _launch_superlink(addresses, env)
     time.sleep(max(0, options.startup_delay))
     try:

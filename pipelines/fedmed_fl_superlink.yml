@@ -23,3 +23,14 @@ plugin_tree:
       data_seed: 13
       fraction_evaluate: 1.0
       summary_file: server_summary.json
+
+      # NEW bastion wiring (for distributed runs)
+      bastion_host: bastion.example.com      # replace with the REAL bastion DNS
+      bastion_user: fedmed                   # SSH user created on bastion
+      bastion_port: 22                       # usually 22
+      bastion_key: /incoming/id_ed25519      # where the plugin expects the key
+      bastion_known_hosts: /incoming/known_hosts
+
+      bastion_fleet_port: 19092              # remote ports on bastion
+      bastion_control_port: 19093
+      bastion_serverapp_port: 19091
