@@ -14,7 +14,7 @@ plugin_tree:
     plugin_parameter_defaults:
       cid: 2
       total_clients: 3
-      superlink_host: 10.193.215.81
+      superlink_host: 172.20.10.11
       superlink_port: 9092
       clientapp_host: 0.0.0.0
       clientapp_port: 9094
