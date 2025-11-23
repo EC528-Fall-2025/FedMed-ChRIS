@@ -51,7 +51,7 @@ resolve_host_ip() {
   echo "localhost"
 }
 
-HOST_IP=$(resolve_host_ip)
+HOST_IP="${ADVERTISE_HOST:-$(resolve_host_ip)}"
 
 if ! docker info >/dev/null 2>&1; then
   echo "[superlink] docker is not available; please start Docker and retry." >&2
