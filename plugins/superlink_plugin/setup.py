@@ -24,7 +24,7 @@ setup(
     package_data={"fedmed_flower_app": ["pyproject.toml"]},
     install_requires=[
         "chris_plugin==0.4.0",
-        "flwr>=1.23.0,<2",
+        "flwr[simulation]>=1.23.0,<2",
         "numpy>=1.26,<3",
         "torch>=2.1.0",
         "torchvision>=0.16.0",
