@@ -19,4 +19,6 @@ RUN pip install .[${extras_require}] \
     && cd / && rm -rf ${SRCDIR}
 WORKDIR /
 
+EXPOSE 9091 9092 9093
+
 CMD ["fedmed-pl-superlink"]
