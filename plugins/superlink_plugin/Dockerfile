@@ -15,6 +15,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       openssh-client autossh ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      openssh-client autossh ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# IMPORTANT: ensure UID 1001 exists for Apptainer/CUBE runtime
+RUN if ! getent passwd 1001 >/dev/null 2>&1; then \
+      useradd -u 1001 -m appuser; \
+    fi
+
 COPY . .
 ARG extras_require=none
 RUN pip install .[${extras_require}] \

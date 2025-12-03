@@ -101,13 +101,13 @@ def build_parser() -> ArgumentParser:
     parser.add_argument(
         "--bastion-key",
         type=str,
-        default="/incoming/id_ed25519",
+        default="id_ed25519",
         help="path to SSH private key inside container",
     )
     parser.add_argument(
         "--bastion-known-hosts",
         type=str,
-        default="/incoming/known_hosts",
+        default="known_hosts",
         help="path to known_hosts file; if missing, host key checking is relaxed",
     )
 
@@ -232,6 +232,18 @@ def _build_addresses(options: Namespace) -> SuperLinkAddresses:
         serverapp=f"{options.host}:{options.serverapp_port}",
     )
 
+def _check_superlink_reachable(host: str, port: int) -> None:
+    try:
+        with socket.create_connection((host, port), timeout=5):
+            print(
+                f"[fedmed-pl-supernode] TCP connectivity to {host}:{port} OK",
+                flush=True,
+            )
+    except OSError as e:
+        print(
+            f"[fedmed-pl-supernode] ERROR: cannot reach {host}:{port} -> {e}",
+            flush=True,
+        )
 
 def _prepare_environment(state_dir: str) -> tuple[dict[str, str], Path]:
     """Create the FLWR_HOME directory and return (env, home_path)."""
@@ -241,9 +253,76 @@ def _prepare_environment(state_dir: str) -> tuple[dict[str, str], Path]:
     env["FLWR_HOME"] = str(flwr_home)
     return env, flwr_home
 
+def _resolve_input_file(inputdir: Path, raw_path: str) -> Path | None:
+    """
+    Resolve a file that is supposed to live under the plugin's input directory.
+
+    Cases:
+      - relative path: look in inputdir / raw_path, else search by basename
+      - absolute path starting with /incoming: treat it as a hint and search
+        under inputdir for the same basename
+      - any other absolute path: only use it if it actually exists
+    """
+    base = inputdir
+    p = Path(raw_path)
+
+    # Case 1: relative path like "id_ed25519" or "keys/id_ed25519"
+    if not p.is_absolute():
+        candidate = base / p
+        if candidate.is_file():
+            print(f"[fedmed-pl-superlink] using bastion file: {candidate}", flush=True)
+            return candidate
+
+        # try by basename anywhere under inputdir
+        basename = p.name
+        matches = list(base.rglob(basename))
+        if matches:
+            chosen = matches[0]
+            print(
+                f"[fedmed-pl-superlink] resolved {raw_path} -> {chosen} (found under {base})",
+                flush=True,
+            )
+            return chosen
+
+        print(
+            f"[fedmed-pl-superlink] ERROR: could not find {raw_path} under {base}",
+            flush=True,
+        )
+        return None
+
+    # Case 2: absolute path under /incoming – treat as hint
+    if str(p).startswith("/incoming/"):
+        basename = p.name
+        if base.exists():
+            matches = list(base.rglob(basename))
+            if matches:
+                chosen = matches[0]
+                print(
+                    f"[fedmed-pl-superlink] resolved {raw_path} -> {chosen} (found under {base})",
+                    flush=True,
+                )
+                return chosen
+        print(
+            f"[fedmed-pl-superlink] ERROR: {raw_path} not usable and nothing named {basename} under {base}",
+            flush=True,
+        )
+        return None
+
+    # Case 3: other absolute path – only accept if it actually exists
+    if p.is_file():
+        print(f"[fedmed-pl-superlink] using bastion file (absolute): {p}", flush=True)
+        return p
+
+    print(
+        f"[fedmed-pl-superlink] ERROR: absolute path {raw_path} does not exist",
+        flush=True,
+    )
+    return None
+
 # Added for reverse tunelling
 def _maybe_open_reverse_tunnels(
     options: Namespace,
+    inputdir: Path,
     fleet_local: str,
     control_local: str,
     serverapp_local: str,
@@ -258,8 +337,49 @@ def _maybe_open_reverse_tunnels(
     if not bastion_host or not bastion_user:
         return None
 
-    key_path = Path(options.bastion_key)
-    known_hosts_path = Path(options.bastion_known_hosts)
+    # Resolve original key under /share/incoming (read-only bind mount)
+    orig_key_path = _resolve_input_file(inputdir, options.bastion_key)
+    if orig_key_path is None:
+        print("[fedmed-pl-superlink] WARNING: no valid SSH key found; skipping reverse tunnels", flush=True)
+        return None
+
+    # 🔑 Copy key to a writable location and fix permissions there
+    keys_dir = Path("/tmp/fedmed-ssh")
+    keys_dir.mkdir(parents=True, exist_ok=True)
+
+    key_path = keys_dir / orig_key_path.name
+    try:
+        shutil.copy2(orig_key_path, key_path)
+        key_path.chmod(0o600)
+        print(
+            f"[fedmed-pl-superlink] copied bastion key to {key_path} and set permissions 0600",
+            flush=True,
+        )
+    except Exception as exc:
+        print(
+            f"[fedmed-pl-superlink] ERROR: failed to copy/chmod bastion key: {exc}",
+            flush=True,
+        )
+        return None
+
+    # Optional: handle known_hosts similarly
+    known_hosts_path = None
+    if options.bastion_known_hosts:
+        orig_known = _resolve_input_file(inputdir, options.bastion_known_hosts)
+        if orig_known and orig_known.is_file():
+            try:
+                known_hosts_path = keys_dir / "known_hosts"
+                shutil.copy2(orig_known, known_hosts_path)
+                print(
+                    f"[fedmed-pl-superlink] copied known_hosts to {known_hosts_path}",
+                    flush=True,
+                )
+            except Exception as exc:
+                print(
+                    f"[fedmed-pl-superlink] WARNING: failed to copy known_hosts: {exc}",
+                    flush=True,
+                )
+                known_hosts_path = None
 
     ssh_opts: list[str] = [
         "-o", "ServerAliveInterval=30",
@@ -267,17 +387,18 @@ def _maybe_open_reverse_tunnels(
         "-o", "ExitOnForwardFailure=yes",
     ]
 
-    if known_hosts_path.exists():
+    if known_hosts_path and known_hosts_path.exists():
         ssh_opts.extend([
             "-o", f"UserKnownHostsFile={known_hosts_path}",
             "-o", "StrictHostKeyChecking=yes",
         ])
     else:
-        # For early testing only; tighten this in production by providing known_hosts.
         ssh_opts.extend(["-o", "StrictHostKeyChecking=no"])
 
     cmd: list[str] = [
-        "autossh", "-M", "0", "-N",
+        "ssh",
+        "-vv",
+        "-N",
         *ssh_opts,
         "-p", str(options.bastion_port),
         "-i", str(key_path),
@@ -287,6 +408,8 @@ def _maybe_open_reverse_tunnels(
         f"{bastion_user}@{bastion_host}",
     ]
 
+    #_check_superlink_reachable(options.superlink_host, options.bastion_port)
+
     print(f"[fedmed-pl-superlink] opening reverse tunnels: {' '.join(cmd)}", flush=True)
     proc = subprocess.Popen(
         cmd,
@@ -295,10 +418,9 @@ def _maybe_open_reverse_tunnels(
         text=True,
     )
     _register_child(proc)
-    threading.Thread(target=_stream_lines, args=(proc.stdout, "autossh"), daemon=True).start()
-    threading.Thread(target=_stream_lines, args=(proc.stderr, "autossh"), daemon=True).start()
+    threading.Thread(target=_stream_lines, args=(proc.stdout, "ssh"), daemon=True).start()
+    threading.Thread(target=_stream_lines, args=(proc.stderr, "ssh"), daemon=True).start()
     return proc
-
 
 
 def handle_signals() -> None:
@@ -409,8 +531,20 @@ def _run_federation(
     min_cpu_limit="1000m",
 )
 def _plugin_main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
-    del inputdir
     handle_signals()
+
+    # DEBUG: show what pl-dircopy actually put into /incoming
+    print(f"[fedmed-pl-superlink] DEBUG: inputdir = {inputdir}", flush=True)
+    root = inputdir
+    if not root.exists():
+        print(f"[fedmed-pl-superlink] DEBUG: {root} does not exist", flush=True)
+    else:
+        for p in root.rglob("*"):
+            try:
+                rel = p.relative_to(root)
+            except ValueError:
+                rel = p
+            print(f"  {root}/{rel}", flush=True)
 
     if getattr(options, "json", False):
         emit_plugin_json()
@@ -438,14 +572,28 @@ def _plugin_main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
             + ", ".join(reachable_ips),
             flush=True,
         )
-    else:
+        # Use the first container IP as the target for SSH -R
+        tunnel_ip = reachable_ips[0]
         print(
-            "[fedmed-pl-superlink] unable to auto-detect host IPs; clients must be pointed at the compute-node address manually.",
+            f"[fedmed-pl-superlink] using {tunnel_ip} as SSH -R backend target",
             flush=True,
         )
-    # New for reverse ssh
-    _maybe_open_reverse_tunnels(options, fleet_local, control_local, serverapp_local)
-    
+    else:
+        print(
+            "[fedmed-pl-superlink] unable to auto-detect host IPs; "
+            "falling back to 127.0.0.1 for SSH -R backend (may fail on host)",
+            flush=True,
+        )
+        tunnel_ip = "127.0.0.1"
+
+    # Local targets *from the EC2 host's perspective* for SSH -R
+    fleet_local     = f"{tunnel_ip}:{options.fleet_port}"
+    control_local   = f"{tunnel_ip}:{options.control_port}"
+    serverapp_local = f"{tunnel_ip}:{options.serverapp_port}"
+
+    # Open reverse tunnels to bastion (no-op if bastion_* not set)
+    _maybe_open_reverse_tunnels(options, inputdir, fleet_local, control_local, serverapp_local)
+
     superlink = _launch_superlink(addresses, env)
     time.sleep(max(0, options.startup_delay))
     try:
@@ -461,6 +609,7 @@ def _plugin_main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
     if not options.keep_state:
         shutil.rmtree(flwr_home, ignore_errors=True)
         print(f"[fedmed-pl-superlink] cleaned {flwr_home}", flush=True)
+
 
 
 def main(*args, **kwargs):
