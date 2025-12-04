@@ -1,6 +1,6 @@
 # FedMed Flower SuperLink
 
-This folder contains the complete _ChRIS_ plugin that launches the Flower SuperLink for the FedMed demo. Run the commands below from inside `plugins/superlink_plugin/`. The SuperLink coordinates training, waits for a configurable number of Flower SuperNodes to connect over gRPC, and writes a JSON summary of the run to `/outgoing`.
+This repo contains the complete _ChRIS_ plugin that launches the Flower SuperLink for the FedMed demo. Run the commands below from inside `plugins/superlink_plugin/`. The SuperLink coordinates training, waits for a configurable number of Flower SuperNodes to connect over gRPC, and writes a JSON summary of the run and the weights file to `/outgoing`.
 
 ## Build
 ```bash
