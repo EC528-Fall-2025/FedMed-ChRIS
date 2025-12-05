@@ -3,14 +3,13 @@
 
 set -euo pipefail
 
-IMAGE="${IMAGE:-docker.io/fedmed/pl-superlink:0.2.0}"
-ROUNDS=3
-TOTAL_CLIENTS=3
-LOCAL_EPOCHS=10
-LEARNING_RATE=0.001
-DATA_SEED=13
-FRACTION_EVALUATE=1.0
-SUMMARY_FILE="server_summary.json"
+IMAGE="${IMAGE:-docker.io/fedmed/pl-superlink:0.0.8}"
+ROUNDS="${ROUNDS:-3}"
+TOTAL_CLIENTS="${TOTAL_CLIENTS:-3}"
+LOCAL_EPOCHS="${LOCAL_EPOCHS:-10}"
+LEARNING_RATE="${LEARNING_RATE:-0.2}"
+DATA_SEED="${DATA_SEED:-13}"
+FRACTION_EVALUATE="${FRACTION_EVALUATE:-1.0}"
 HOST_PORT_FLEET=9092
 HOST_PORT_CONTROL=9093
 HOST_PORT_SERVERAPP=9091
@@ -63,7 +62,7 @@ echo "[superlink] host IP: ${HOST_IP}"
 echo "[superlink] incoming: ${IN_DIR}"
 echo "[superlink] outgoing: ${OUT_DIR}"
 echo "[superlink] exposing ports: ${HOST_PORT_SERVERAPP},${HOST_PORT_FLEET},${HOST_PORT_CONTROL}"
-echo "[superlink] connect SuperNodes to ${HOST_IP}:${HOST_PORT_FLEET}"
+echo "[superlink] connect SuperNodes to ${HOST_IP}:${HOST_PORT_FLEET} (defaults are fixed in the container)"
 echo
 echo "[superlink] launching container..."
 
@@ -75,15 +74,10 @@ docker run --rm --name fedmed-superlink \
   -v "${OUT_DIR}":/outgoing:rw \
   "${IMAGE}" \
     fedmed-pl-superlink \
-      --host 0.0.0.0 \
-      --fleet-port 9092 \
-      --control-port 9093 \
-      --serverapp-port 9091 \
       --rounds ${ROUNDS} \
       --total-clients ${TOTAL_CLIENTS} \
       --local-epochs ${LOCAL_EPOCHS} \
       --learning-rate ${LEARNING_RATE} \
       --data-seed ${DATA_SEED} \
       --fraction-evaluate ${FRACTION_EVALUATE} \
-      --summary-file ${SUMMARY_FILE} \
       /incoming /outgoing

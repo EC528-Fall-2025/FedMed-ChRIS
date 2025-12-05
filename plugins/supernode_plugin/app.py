@@ -10,17 +10,17 @@ import subprocess
 import sys
 import threading
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List
 
 from chris_plugin import chris_plugin
 
-__version__ = "0.0.1"
+__version__ = "0.0.8"
 
 SUMMARY_TOKEN = "[fedmed-supernode-app] SUMMARY "
 DEFAULT_SUPERLINK_PORT = 9092
 DEFAULT_CLIENTAPP_PORT = 9094
+DEFAULT_TOTAL_CLIENTS = 3
 DEFAULT_STATE_DIR = Path("/tmp/fedmed-flwr-node")
 DEFAULT_METRICS_FILE = "client_metrics.json"
 IMAGE_TAG = f"docker.io/fedmed/pl-supernode:{__version__}"
@@ -30,51 +30,24 @@ Process = subprocess.Popen
 CHILDREN: List[Process] = []
 
 
-@dataclass(frozen=True)
-class NodeConfig:
-    """Stable representation of the node-specific configuration."""
-
-    cid: int
-    total_clients: int
-    data_seed: int
-
-    def as_flag(self) -> str:
-        return (
-            f"partition-id={self.cid} "
-            f"num-partitions={self.total_clients} "
-            f"data-seed={self.data_seed}"
-        )
-
-
-@dataclass(frozen=True)
-class ConnectionTargets:
-    """Destination addresses for the Flower services used by the SuperNode."""
-
-    superlink: str
-    clientapp: str
-
-
 def build_parser() -> ArgumentParser:
     parser = ArgumentParser(
         description="Run the FedMed Flower SuperNode inside ChRIS.",
         formatter_class=ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--cid", type=int, default=0, help="client id (partition id)")
-    parser.add_argument("--total-clients", type=int, default=1, help="logical clients")
-    parser.add_argument("--superlink-host", default="fedmed-pl-superlink", help="SuperLink host/IP")
-    parser.add_argument("--superlink-port", type=int, default=DEFAULT_SUPERLINK_PORT, help="SuperLink Fleet API port")
-    parser.add_argument("--clientapp-host", default="0.0.0.0", help="ClientAppIo bind host")
-    parser.add_argument("--clientapp-port", type=int, default=DEFAULT_CLIENTAPP_PORT, help="ClientAppIo bind port")
-    parser.add_argument("--data-seed", type=int, default=13, help="seed for synthetic data partitioning")
-    parser.add_argument("--metrics-file", default=DEFAULT_METRICS_FILE, help="filename to store metrics")
-    parser.add_argument("--state-dir", type=str, default=str(DEFAULT_STATE_DIR), help="directory used as FLWR_HOME")
-    parser.add_argument("--keep-state", action="store_true", help="keep Flower cache instead of deleting it")
-    parser.add_argument(
-        "--transport",
-        choices=["grpc-rere", "grpc-adapter", "rest"],
-        default="grpc-rere",
-        help="transport used to connect to the SuperLink",
+    parser.set_defaults(
+        superlink_port=DEFAULT_SUPERLINK_PORT,
+        clientapp_host="0.0.0.0",
+        clientapp_port=DEFAULT_CLIENTAPP_PORT,
+        metrics_file=DEFAULT_METRICS_FILE,
+        state_dir=str(DEFAULT_STATE_DIR),
+        keep_state=False,
+        transport="grpc-rere",
     )
+    parser.add_argument("--cid", type=int, default=0, help="client id (partition id)")
+    parser.add_argument("--total-clients", type=int, default=DEFAULT_TOTAL_CLIENTS, help="logical clients")
+    parser.add_argument("--superlink-host", default="fedmed-pl-superlink", help="SuperLink host/IP")
+    parser.add_argument("--data-seed", type=int, default=13, help="seed for synthetic data partitioning")
     parser.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument(
         "-V",
@@ -143,16 +116,23 @@ def _stream_lines(stream, prefix: str, hook=None) -> None:  # type: ignore[overr
 
 def _run_supernode(options: Namespace, env: dict[str, str]) -> Dict[str, Any]:
     """Launch `flower-supernode`, capture streamed metrics, and return the last train summary."""
-    targets = _build_targets(options)
-    node_config = _build_node_config(options)
+    targets = {
+        "superlink": f"{options.superlink_host}:{options.superlink_port}",
+        "clientapp": f"{options.clientapp_host}:{options.clientapp_port}",
+    }
+    node_config = f"partition-id={options.cid} num-partitions={options.total_clients} data-seed={options.data_seed}"
+    print(
+        f"[fedmed-pl-supernode:{options.cid}] targets superlink={targets['superlink']} clientapp={targets['clientapp']} node_config={node_config}",
+        flush=True,
+    )
     cmd: List[str] = [
         "flower-supernode",
         "--insecure",
         *_transport_flag(options.transport),
-        f"--superlink={targets.superlink}",
-        f"--clientappio-api-address={targets.clientapp}",
+        f"--superlink={targets['superlink']}",
+        f"--clientappio-api-address={targets['clientapp']}",
         "--node-config",
-        node_config.as_flag(),
+        node_config,
     ]
     print(f"[fedmed-pl-supernode] starting SuperNode: {' '.join(cmd)}", flush=True)
 
@@ -186,9 +166,11 @@ def _run_supernode(options: Namespace, env: dict[str, str]) -> Dict[str, Any]:
     )
     stdout_thread.start()
     stderr_thread.start()
+    print(f"[fedmed-pl-supernode:{options.cid}] waiting for flower-supernode to finish...", flush=True)
     exit_code = proc.wait()
     stdout_thread.join()
     stderr_thread.join()
+    print(f"[fedmed-pl-supernode:{options.cid}] flower-supernode exited with {exit_code}", flush=True)
 
     if exit_code != 0:
         raise RuntimeError(f"flower-supernode exited with {exit_code}")
@@ -200,23 +182,6 @@ def _run_supernode(options: Namespace, env: dict[str, str]) -> Dict[str, Any]:
             "message": "No metrics emitted by the ClientApp.",
         }
     return metrics
-
-
-def _build_node_config(options: Namespace) -> NodeConfig:
-    """Create a typed view of the node configuration inputs."""
-    return NodeConfig(
-        cid=options.cid,
-        total_clients=options.total_clients,
-        data_seed=options.data_seed,
-    )
-
-
-def _build_targets(options: Namespace) -> ConnectionTargets:
-    """Compute the SuperLink and ClientApp addresses."""
-    return ConnectionTargets(
-        superlink=f"{options.superlink_host}:{options.superlink_port}",
-        clientapp=f"{options.clientapp_host}:{options.clientapp_port}",
-    )
 
 
 def _prepare_environment(state_root: str, cid: int) -> tuple[dict[str, str], Path]:
@@ -232,10 +197,16 @@ def _prepare_environment(state_root: str, cid: int) -> tuple[dict[str, str], Pat
     parser=parser,
     title="FedMed Flower SuperNode",
     category="Federated Learning",
-    min_memory_limit="200Mi",
-    min_cpu_limit="500m",
+    min_memory_limit="32Gi",
+    min_cpu_limit="3000m",
 )
-def _plugin_main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
+def main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
+    print(
+        "\n==============================="
+        "\n=== FedMed Flower SuperNode ===\n"
+        "===============================\n",
+        flush=True,
+    )
     del inputdir
     handle_signals()
 
@@ -248,6 +219,8 @@ def _plugin_main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
     if options.cid < 0 or options.cid >= options.total_clients:
         raise ValueError("cid must be within [0, total-clients)")
 
+
+    # 
     env, flwr_home = _prepare_environment(options.state_dir, options.cid)
 
     summary = None
@@ -263,13 +236,6 @@ def _plugin_main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
     if not options.keep_state:
         shutil.rmtree(flwr_home, ignore_errors=True)
         print(f"[fedmed-pl-supernode:{options.cid}] cleaned {flwr_home}", flush=True)
-
-
-def main(*args, **kwargs):
-    if not args and not kwargs and "--json" in sys.argv:
-        emit_plugin_json()
-        return
-    return _plugin_main(*args, **kwargs)
 
 
 def emit_plugin_json() -> None:

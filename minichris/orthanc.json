@@ -376,7 +376,7 @@
     //"untrusted" : {
     //  "AET" : "ORTHANC",
     //  "Port" : 104,
-    //  "Host" : "127.0.0.1",
+    //  "Host" : "127.0.0.2",
     //  "Manufacturer" : "Generic",
     //  "AllowEcho" : false,
     //  "AllowFind" : false,
@@ -427,8 +427,8 @@
      * followed by the username/password pair (if the password
      * protection is enabled on the peer).
      **/
-    // "peer"  : [ "http://127.0.0.1:8043/", "alice", "alicePassword" ]
-    // "peer2" : [ "http://127.0.0.1:8044/" ]
+    // "peer"  : [ "http://127.0.0.2:8043/", "alice", "alicePassword" ]
+    // "peer2" : [ "http://127.0.0.2:8044/" ]
 
     /**
      * This is another, more advanced format to define Orthanc
@@ -440,7 +440,7 @@
      * "HttpTimeout" on a per-peer basis.
      **/
     // "peer" : {
-    //   "Url" : "http://127.0.0.1:8043/",
+    //   "Url" : "http://127.0.0.2:8043/",
     //   "Username" : "alice",
     //   "Password" : "alicePassword",
     //   "HttpHeaders" : { "Token" : "Hello world" },
