@@ -2,8 +2,8 @@
 
 This repository now ships a complete Flower Deployment Engine demo that runs entirely inside miniChRIS. Two ChRIS plugins wrap the Flower binaries:
 
-- `fedmed/pl-superlink:0.1.0` – spins up a Flower **SuperLink** and launches the bundled FedMed **ServerApp**.
-- `fedmed/pl-supernode:0.1.0` – starts a Flower **SuperNode** that executes the FedMed **ClientApp**.
+- `fedmed/pl-superlink:0.1.1` – spins up a Flower **SuperLink** and launches the bundled FedMed **ServerApp**.
+- `fedmed/pl-supernode:0.1.1` – starts a Flower **SuperNode** that executes the FedMed **ClientApp**.
 
 The Flower App (stored in `plugins/superlink_plugin/fedmed_flower_app`) uses SuperLink/SuperNode APIs exclusively and never touches deprecated `start_server`/`NumPyClient` helpers.
 
@@ -39,8 +39,8 @@ From the repo root:
 The wrapper script boots the stack, runs `chrisomatic`, and registers both FedMed plugins. Watch for lines such as:
 
 ```
-✔ docker.io/fedmed/pl-superlink:0.1.0 http://chris:8000/api/v1/plugins/6/
-✔ docker.io/fedmed/pl-supernode:0.1.0 http://chris:8000/api/v1/plugins/7/
+✔ docker.io/fedmed/pl-superlink:0.1.1 http://chris:8000/api/v1/plugins/6/
+✔ docker.io/fedmed/pl-supernode:0.1.1 http://chris:8000/api/v1/plugins/7/
 ```
 
 Those checkmarks mean the plugins are available to pipelines.
@@ -62,7 +62,7 @@ Create two throwaway analyses named `superlink` and `supernode` (any seed file w
 
 #### SuperLink analysis
 
-1. Open the `superlink` analysis, right-click its lone node, and select **Add Pipeline → FedMed Flower SuperLink v0.1.0**.
+1. Open the `superlink` analysis, right-click its lone node, and select **Add Pipeline → FedMed Flower SuperLink v0.1.1**.
 2. Leave defaults unless you need extra rounds/clients. The plugin log prints something like:
    ```
    [fedmed-pl-superlink] SuperNodes should target Fleet API at 172.22.0.3:9092
@@ -77,7 +77,7 @@ Create two throwaway analyses named `superlink` and `supernode` (any seed file w
 
 #### SuperNode analysis
 
-1. Open the `supernode` analysis, right-click the node, and select **Add Pipeline → FedMed Flower SuperNode v0.1.0**.
+1. Open the `supernode` analysis, right-click the node, and select **Add Pipeline → FedMed Flower SuperNode v0.1.1**.
 2. Set `superlink_host` to the IP reported by the SuperLink pipeline (e.g. `172.22.0.3`). Keep `superlink_port=9092` unless you changed it.
 3. Launch one analysis per participant (`cid` ranges from `0` to `total_clients-1`). Each SuperNode connects to the running SuperLink, receives the bundled ClientApp, and logs
    ```
@@ -98,7 +98,7 @@ Create two throwaway analyses named `superlink` and `supernode` (any seed file w
    (This runs `minichris/unmake.sh`, stopping containers and removing associated networks/volumes.)
 2. Remove the OCI images if you no longer need them:
    ```bash
-   docker image rm docker.io/fedmed/pl-superlink:0.1.0 docker.io/fedmed/pl-supernode:0.1.0
+   docker image rm docker.io/fedmed/pl-superlink:0.1.1 docker.io/fedmed/pl-supernode:0.1.1
    ```
 3. Optional: prune Flower state caches created during the run:
    ```bash
