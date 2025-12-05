@@ -1,0 +1,2 @@
+include fedmed_flower_app/fedmed_flower_app/pyproject.toml
+recursive-include fedmed_flower_app/fedmed_flower_app/certificates *

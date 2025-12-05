@@ -147,7 +147,7 @@ def _run_supernode(options: Namespace, env: dict[str, str]) -> Dict[str, Any]:
     node_config = _build_node_config(options)
     cmd: List[str] = [
         "flower-supernode",
-        "--insecure",
+        "--root-certificates certificates/ca.crt",
         *_transport_flag(options.transport),
         f"--superlink={targets.superlink}",
         f"--clientappio-api-address={targets.clientapp}",

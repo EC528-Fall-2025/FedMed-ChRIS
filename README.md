@@ -29,7 +29,7 @@ Our vision is to produce a Federated Learning workflow for medical imaging so th
 Our Primary Goals:
 1. Deploy ≥3 ChRIS nodes + 1 aggregator (local/cloud VMs OK), each with its own dataset.
 
-2. Integrate a federated framework (OpenFL or equivalent) with ChRIS pipelines (CUBE) to run FedAvg rounds.
+2. Integrate a federated framework (Flower SuperLink/SuperNode) with ChRIS pipelines (CUBE) to run FedAvg rounds.
 
 3. Containerize training/inference plugins (Python) with clear inputs/outputs and versioned provenance.
 
@@ -61,7 +61,7 @@ Our Primary Goals:
 
 - Secure & private flow of data: Ensure that only models are being transferred between nodes and aggregators. Outputs of each node will be automatically assessed for patient data. 
 
-- OpenFL: This federated learning framework will be integrated with the ChRIS pipeline for generalizability of training models and privacy regulations
+- Flower FL stack: This federated learning framework will be integrated with the ChRIS pipeline for generalizability of training models and privacy regulations
 
 - Convenient orchestration: Simple process for setup, training round execution, shut-down, and clean up. There should be minimal commands used to orchestrate a complete machine learning pipeline.
 
@@ -80,23 +80,23 @@ The project will follow a multi-step approach. Our goal is to build a machine le
  Install Docker on two VMs to simulate two different hospitals, then clone and run miniChRIS. This gives us two reachable CUBE endpoints (each hospital has its own CUBE, the ChRIS backend API).
 
 
-- **Set up a secure central aggregator**
- Deploy a central “director/aggregator” service that coordinates rounds of federated training, using OpenFL. It will use TLS (transport layer security), which is a protocol that gives encrypted connections and authentication (certificates), this ensures the traffic is encrypted and the server knows which client is connecting.
+- **Set up the Flower control plane**
+ Build and run the SuperLink plugin, which launches `flower-superlink` plus the packaged server app. It exposes the Fleet/Control/ServerAppIO ports Flower uses to coordinate rounds.
 
 
 - **Write and containerize Python training apps**
- Develop Python training code for the local nodes (to run training loops/epochs), and containerize it so each site can run it reproducibly. The output will be a versioned docker container image that runs on both ChRIS sites and participates in OpenFL rounds. 
+ Develop the Flower server/client apps and ship them inside the SuperLink image so every SuperNode downloads identical code before training. 
 
 
 - **Orchestrate federated training rounds**
- Run multiple rounds of FedAvg: the director schedules tasks, each site trains locally, sends weight deltas, and the director aggregates and redistributes the global model. This entails defining an FL plan, starting envoys at sites, and tuning the loop. The output will be a repeatable script or ChRIS pipeline that runs x rounds end-to-end and leaves an artifacted (version of model produced at specified round) global model per round.
+ Run multiple rounds of FedAvg: the SuperLink container stages the Flower app, SuperNodes download the client bundle, train locally, send weight deltas, and the server app aggregates/redistributes the global model. This entails defining the run config, launching SuperNodes (one per logical client), and letting Flower manage the loop. The output will be a repeatable script or ChRIS pipeline that runs x rounds end-to-end and leaves an artifacted global model per round.
 
 - **Collect metrics**
 Gather accuracy, performance, and stability metrics. These metrics demonstrate that the system works without ever centralizing the data. The output will be a report with per round global metrics, per site local metrics, total runtime and network traffic. 
 
 
 <p align="center">
-<img width="100%" alt="Federated Learning Flow Chart" src="https://github.com/user-attachments/assets/0c120a77-8fad-438b-bcdf-996a4375243b" />
+<img width="100%" alt="Federated Learning Flow Chart" src="assets/federated_diagram.png" />
 </p>
 
 
@@ -147,7 +147,7 @@ As a ChRIS operator or medical researcher, I want to deploy at least three ChRIS
 
 **Deliverables:**
 
-* Integration of OpenFL with our existing ChRIS plugins/apps.
+* Integration of Flower SuperLink/SuperNode with our existing ChRIS plugins/apps.
 * Networked aggregator stub in place to test weight passing (without any actual federated logic yet).
 * End-to-end demo showing model weights exchanged reliably, no raw data transfer.
 
@@ -161,7 +161,7 @@ As a clinical researcher or developer, I need at least 2 nodes to be reliably sh
  
 **Deliverables:**
 
-* TLS-secured (encrypted) communication between nodes and the aggregator (might be free with OpenFL).
+* TLS-secured (encrypted) communication between SuperNodes and the SuperLink controller (leveraging Flower’s transport options).
 * Federated aggregation working across at least two nodes with central aggregation.
 * Deployment scripts to help for multiple ChRIS instances.
 * Early draft of documentation that FL setup and ML plugin design.

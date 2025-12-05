@@ -20,7 +20,7 @@ setup(
     py_modules=["app"],
     install_requires=[
         "chris_plugin==0.4.0",
-        "flwr>=1.23.0,<2",
+        "flwr[simulation]>=1.23.0,<2",
         "torch>=2.1.0",
         "torchvision>=0.16.0",
         "medmnist>=3.0.1",

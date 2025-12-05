@@ -21,10 +21,10 @@ setup(
     packages=["fedmed_flower_app"],
     package_dir={"fedmed_flower_app": "fedmed_flower_app/fedmed_flower_app"},
     include_package_data=True,
-    package_data={"fedmed_flower_app": ["pyproject.toml"]},
+    package_data={"fedmed_flower_app": ["pyproject.toml", "certificates/*"]},
     install_requires=[
         "chris_plugin==0.4.0",
-        "flwr>=1.23.0,<2",
+        "flwr[simulation]>=1.23.0,<2",
         "numpy>=1.26,<3",
         "torch>=2.1.0",
         "torchvision>=0.16.0",
