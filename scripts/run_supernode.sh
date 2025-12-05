@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # Override via env vars if needed
-IMAGE="${IMAGE:-docker.io/fedmed/pl-supernode:0.0.8}"
+IMAGE="${IMAGE:-docker.io/fedmed/pl-supernode:0.1.0}"
 # Set SUPERLINK_HOST to the SuperLink’s routable IP/DNS (required)
 SUPERLINK_HOST="${SUPERLINK_HOST:-10.239.56.236}"
 CID="${CID:-0}"

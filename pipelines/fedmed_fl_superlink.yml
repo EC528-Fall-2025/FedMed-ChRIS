@@ -1,6 +1,6 @@
 ---
 authors: FedMed Team <dev@fedmed.org>
-name: "FedMed Flower SuperLink v0.0.8"
+name: "FedMed Flower SuperLink v0.1.0"
 description:
   Launches the Flower SuperLink inside CUBE. Run this pipeline once for each
   federated training session, then trigger the SuperNode pipeline(s) while the
@@ -9,7 +9,7 @@ category: Federated Learning
 locked: false
 plugin_tree:
   - title: start-flower-server
-    plugin: pl-superlink v0.0.8
+    plugin: pl-superlink v0.1.0
     previous: ~
     plugin_parameter_defaults:
       rounds: 3

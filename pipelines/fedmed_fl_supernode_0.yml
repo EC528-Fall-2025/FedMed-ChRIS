@@ -1,6 +1,6 @@
 ---
 authors: FedMed Team <dev@fedmed.org>
-name: "FedMed Flower SuperNode 0 v0.0.8"
+name: "FedMed Flower SuperNode 0 v0.1.0"
 description:
   Runs a single Flower SuperNode inside CUBE. Launch this pipeline once per
   participating site while the FedMed Flower SuperLink pipeline is still
@@ -9,7 +9,7 @@ category: Federated Learning
 locked: false
 plugin_tree:
   - title: run-flower-client
-    plugin: pl-supernode v0.0.8
+    plugin: pl-supernode v0.1.0
     previous: ~
     plugin_parameter_defaults:
       cid: 0
