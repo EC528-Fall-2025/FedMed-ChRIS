@@ -436,6 +436,19 @@ def handle_signals() -> None:
     signal.signal(signal.SIGINT, _handle)
 
 
+def _register_supernodes(num_supernodes, env: dict[str, str]):
+    #ssh-keygen -t ecdsa -b 384 -N "" -f "${KEY_DIR}/client_credentials_$i" -C ""
+    for i in range(num_supernodes):
+        keygen_cmd: List[str] = ["ssh-keygen", "-t", "ecdsa", "-b", "384", "-N", "''", "-f", f"keys/client_credentials_{i}", "-C", "''"]
+        keygen_proc = subprocess.Popen(
+                keygen_cmd, 
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.PIPE, 
+                text=True, 
+                env=env,
+                )
+        _register_child(keygen_proc)
+
 def _launch_superlink(addresses: SuperLinkAddresses, env: dict[str, str]) -> Process:
     """Start the long-lived Flower SuperLink services inside this container."""
     cert_dir = APP_DIR / "certificates"
@@ -450,6 +463,7 @@ def _launch_superlink(addresses: SuperLinkAddresses, env: dict[str, str]) -> Pro
         str(cert_dir / "server.pem"),
         "--ssl-keyfile",
         str(cert_dir / "server.key"),
+        "enable-supernode-auth",
     ]
     print(f"[fedmed-pl-superlink] starting SuperLink: {' '.join(cmd)}", flush=True)
     proc = subprocess.Popen(
@@ -464,7 +478,6 @@ def _launch_superlink(addresses: SuperLinkAddresses, env: dict[str, str]) -> Pro
     threading.Thread(target=_stream_lines, args=(proc.stdout, prefix), daemon=True).start()
     threading.Thread(target=_stream_lines, args=(proc.stderr, prefix), daemon=True).start()
     return proc
-
 
 def _run_federation(
     options: Namespace,
