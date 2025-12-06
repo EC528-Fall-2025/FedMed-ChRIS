@@ -12,10 +12,10 @@ plugin_tree:
     plugin: pl-superlink v0.1.3
     previous: ~
     plugin_parameter_defaults:
-      rounds: 3
+      rounds: 20
       total_clients: 3
-      local_epochs: 10
-      learning_rate: 0.2
+      local_epochs: 3
+      learning_rate: 0.02
       data_seed: 13
       fraction_evaluate: 1.0
       summary_file: server_summary.json
