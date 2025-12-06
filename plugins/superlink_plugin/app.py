@@ -497,7 +497,6 @@ def main(options: Namespace, inputdir: Path, outputdir: Path) -> None:
         "===============================\n",
         flush=True,
     )
-    del inputdir
     handle_signals()
 
     # DEBUG: show what pl-dircopy actually put into /incoming
