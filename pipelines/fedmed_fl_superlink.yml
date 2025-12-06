@@ -18,3 +18,15 @@ plugin_tree:
       learning_rate: 0.2
       data_seed: 13
       fraction_evaluate: 1.0
+      summary_file: server_summary.json
+
+      # NEW bastion wiring (for distributed runs)
+      bastion_host: 52.71.46.62              # REAL bastion Elastic IP on EC2
+      bastion_user: fedmed                   # SSH user created on bastion
+      bastion_port: 22                       # usually 22
+      bastion_key: id_ed25519                # where the plugin expects the key
+      bastion_known_hosts: known_hosts
+
+      bastion_fleet_port: 19092              # remote ports on bastion
+      bastion_control_port: 19093
+      bastion_serverapp_port: 19091
