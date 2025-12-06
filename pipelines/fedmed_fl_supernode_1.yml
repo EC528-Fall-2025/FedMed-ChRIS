@@ -1,6 +1,6 @@
 ---
 authors: FedMed Team <dev@fedmed.org>
-name: "FedMed Flower SuperNode 1 v0.2.0"
+name: "FedMed Flower SuperNode 1 v0.1.3"
 description:
   Runs a single Flower SuperNode inside CUBE. Launch this pipeline once per
   participating site while the FedMed Flower SuperLink pipeline is still
@@ -9,14 +9,13 @@ category: Federated Learning
 locked: false
 plugin_tree:
   - title: run-flower-client
-    plugin: pl-supernode v0.2.0
+    plugin: pl-supernode v0.1.3
     previous: ~
     plugin_parameter_defaults:
       cid: 1
       total_clients: 3
-      superlink_host: 172.17.0.2
-      superlink_port: 9092
+      superlink_host: 52.71.46.62           # <-- bastion host
+      superlink_port: 19092                 # <-- bastion_fleet_port from superlink plugin
       clientapp_host: 0.0.0.0
       clientapp_port: 9094
       data_seed: 13
-      metrics_file: client_metrics.json

@@ -1,0 +1,6 @@
+[submodule "plugins/superlink_plugin"]
+	path = plugins/superlink_plugin
+	url = https://github.com/FNNDSC/pl-superlink.git
+[submodule "plugins/supernode_plugin"]
+	path = plugins/supernode_plugin
+	url = https://github.com/FNNDSC/pl-supernode.git

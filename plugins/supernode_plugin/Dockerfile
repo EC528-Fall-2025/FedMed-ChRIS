@@ -19,4 +19,6 @@ RUN pip install .[${extras_require}] \
     && cd / && rm -rf ${SRCDIR}
 WORKDIR /
 
+EXPOSE 9094
+
 CMD ["fedmed-pl-supernode"]

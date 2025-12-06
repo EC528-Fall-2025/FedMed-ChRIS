@@ -1,6 +1,6 @@
 ---
 authors: FedMed Team <dev@fedmed.org>
-name: "FedMed Flower SuperLink v0.2.0"
+name: "FedMed Flower SuperLink v0.1.3"
 description:
   Launches the Flower SuperLink inside CUBE. Run this pipeline once for each
   federated training session, then trigger the SuperNode pipeline(s) while the
@@ -9,17 +9,24 @@ category: Federated Learning
 locked: false
 plugin_tree:
   - title: start-flower-server
-    plugin: pl-superlink v0.2.0
+    plugin: pl-superlink v0.1.3
     previous: ~
     plugin_parameter_defaults:
-      host: 0.0.0.0
-      fleet_port: 9092
-      control_port: 9093
-      serverapp_port: 9091
-      rounds: 3
+      rounds: 20
       total_clients: 3
-      local_epochs: 10
-      learning_rate: 0.2
+      local_epochs: 3
+      learning_rate: 0.02
       data_seed: 13
       fraction_evaluate: 1.0
       summary_file: server_summary.json
+
+      # NEW bastion wiring (for distributed runs)
+      bastion_host: 52.71.46.62              # REAL bastion Elastic IP on EC2
+      bastion_user: fedmed                   # SSH user created on bastion
+      bastion_port: 22                       # usually 22
+      bastion_key: id_ed25519                # where the plugin expects the key
+      bastion_known_hosts: known_hosts
+
+      bastion_fleet_port: 19092              # remote ports on bastion
+      bastion_control_port: 19093
+      bastion_serverapp_port: 19091
