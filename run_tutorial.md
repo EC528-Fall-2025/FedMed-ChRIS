@@ -1,34 +1,32 @@
 ## FedMed Flower Apps + miniChRIS Walkthrough
 
-This repository now ships a complete Flower Deployment Engine demo that runs entirely inside miniChRIS. Two ChRIS plugins wrap the Flower binaries:
+This repo ships a Flower Deployment Engine demo that runs inside miniChRIS. Two ChRIS plugins wrap the Flower binaries:
 
-- `fedmed/pl-superlink:0.1.3` – spins up a Flower **SuperLink** and launches the bundled FedMed **ServerApp**.
-- `fedmed/pl-supernode:0.1.3` – starts a Flower **SuperNode** that executes the FedMed **ClientApp**.
-
-The Flower App (stored in `plugins/superlink_plugin/fedmed_flower_app`) uses SuperLink/SuperNode APIs exclusively and never touches deprecated `start_server`/`NumPyClient` helpers.
+- `plugins/superlink_plugin` – spins up a Flower **SuperLink** and launches the bundled FedMed **ServerApp**.
+- `plugins/supernode_plugin` – starts a Flower **SuperNode** that executes the FedMed **ClientApp**.
 
 ### Architecture at a glance
 
-- **Long-lived components**: the Flower **SuperLink** acts as the control plane, while each Flower **SuperNode** keeps reconnecting and waits for new tasks. In this demo both are wrapped as ChRIS plugins, but the roles map directly to production deployments where SuperLink/SuperNodes run continuously.
-- **Short-lived components**: every `flwr run` triggers a short-lived **ServerApp** plus one **ClientApp** per SuperNode. Those runs pull the Flower App bundle from the SuperLink, execute the ML logic, and exit.
-- **ChRIS orchestration**: the SuperLink plugin stages the Flower App bundle, starts the Flower control plane, and kicks off the run. The SuperNode plugin starts `flower-supernode`, streams metrics, and writes the final JSON summary to `/outgoing`.
+- **Long-lived components**: the Flower **SuperLink** acts as the control plane; each Flower **SuperNode** reconnects and waits for tasks.
+- **Short-lived components**: every `flwr run` triggers a **ServerApp** plus one **ClientApp** per SuperNode; they pull the Flower App bundle from SuperLink, run, and exit.
+- **ChRIS orchestration**: SuperLink stages the Flower App bundle, starts the control plane, and kicks off the run. SuperNode starts `flower-supernode`, streams metrics, and writes a JSON summary to `/outgoing`.
 
-Below is the full workflow for building the images, booting miniChRIS, importing the pipelines, and running an end-to-end round.
+Below is the workflow for building images, booting miniChRIS, importing pipelines, and running end-to-end. It also covers the reverse SSH setup (bastion) and the single-machine fallback.
 
 ---
 
-### 1. Build (or rebuild) the OCI images
+### 1) Build (or rebuild) the OCI images
 
 ```bash
 docker build -t docker.io/fedmed/pl-superlink:x.x.x plugins/superlink_plugin
 docker build -t docker.io/fedmed/pl-supernode:x.x.x plugins/supernode_plugin
 ```
 
-> Rebuild whenever you change plugin or Flower App code. The SuperLink image bundles the Flower App sources, so every rebuild keeps SuperNodes in sync.
+Rebuild whenever you change plugin or Flower App code (SuperLink bundles the Flower App).
 
 ---
 
-### 2. Start miniChRIS
+### 2) Start miniChRIS
 
 From the repo root:
 
@@ -36,73 +34,63 @@ From the repo root:
 ./minichris.sh
 ```
 
-The wrapper script boots the stack, runs `chrisomatic`, and registers both FedMed plugins. Watch for lines such as:
-
-```
-✔ docker.io/fedmed/pl-superlink:0.1.3 http://chris:8000/api/v1/plugins/6/
-✔ docker.io/fedmed/pl-supernode:0.1.3 http://chris:8000/api/v1/plugins/7/
-```
-
-Those checkmarks mean the plugins are available to pipelines.
+This boots the stack, runs `chrisomatic`, and registers both FedMed plugins.
 
 ---
 
-### 3. Import the pipelines via the UI
+### 3) Prepare feeds for reverse SSH (bastion) or single-machine fallback
 
-1. Open http://localhost:8020/pipelines and log in (`chris/chris1234`).
-2. Upload both YAML definitions from `pipelines/`:
-   - `pipelines/fedmed_fl_superlink.yml`
-   - `pipelines/fedmed_fl_supernode.yml`
+**Create feeds**
+- Go to `http://localhost:8020/library/home/chris` to create feeds. (Sign in with *usr: chris* and *pass: chris1234* when prompted).
+
+**Reverse SSH (recommended for cross-machine runs):**
+- Have a bastion running (we use AWS). Save its SSH keys (`id_ed25519`, matching `known_hosts` entry).
+- Create a feed that contains a folder with `known_hosts` and `id_ed25519`. Name the feed *Superlink*. 
+
+**Single-machine fallback (recommended for demo runs):**
+- If you don’t want to set up a bastion, create a feed from any file for SuperLink. It will default to the Docker network, and communication will be local-only (all SuperNodes must run on the same machine).
 
 ---
 
-### 4. Launch demo analyses (SuperLink first, then SuperNodes)
+### 4) Import the pipelines via the UI
 
-Create two throwaway analyses named `superlink` and `supernode` (any seed file works).
+1. Open `http://localhost:8020/pipelines`
+2. If you decide to use the reverse SSH method, go to the plugins folder and change bastion host and bastion ports based on how you set it up. If you are running the demo version, go to the supernode yml files and change the superlink host to the ip the superlink prints out when you run it. 
+3. Upload all YAMLs from `pipelines/`:
+   - `pipelines/fedmed_pl_superlink.yml`
+   - `pipelines/fedmed_pl_supernode_x.yml` do this for 0, 1, and 2. 
+   > If you are running this on a single machine and not using the bastion, you may want to see step 5 on how to adjust the yml files in this case.
+
+---
+
+### 5) Launch analyses (SuperLink first, then SuperNodes)
 
 #### SuperLink analysis
-
-1. Open the `superlink` analysis, right-click its lone node, and select **Add Pipeline → FedMed Flower SuperLink v0.1.3**.
-2. Leave defaults unless you need extra rounds/clients. The plugin log prints something like:
-   ```
-   [fedmed-pl-superlink] SuperNodes should target Fleet API at 172.22.0.3:9092
-   [fedmed-pl-superlink] reachable IPv4 addresses: 172.22.0.3
-   ```
-3. Copy the Fleet API IP/port—clients must point `superlink_host`/`superlink_port` at that address.
-4. When training finishes the log emits:
-   ```
-   [fedmed-superlink-app] SUMMARY {...}
-   ```
-   and `/outgoing/server_summary.json` receives the parsed JSON (round metrics, run id, etc.).
+1. Open the `superlink` analysis, right-click its lone node, and select **Add Pipeline → FedMed Flower SuperLink v x.x.x**.
+2. When training finishes, `/outgoing/server_summary.json` contains the parsed summary.
 
 #### SuperNode analysis
+1. Make sure `superlink_host` is set to the SuperLink address in the pipeline yml file (bastion-resolvable if using reverse SSH; Docker network IP if local-only). 
+2. Open each `supernode` analysis, right-click the node, and select **Add Pipeline → FedMed Flower SuperNode v x.x.x**.
+3. Launch one analysis per participant. Each SuperNode logs `SUMMARY` messages; `/outgoing/client_metrics.json` captures the last one.
 
-1. Open the `supernode` analysis, right-click the node, and select **Add Pipeline → FedMed Flower SuperNode v0.1.3**.
-2. Set `superlink_host` to the IP reported by the SuperLink pipeline (e.g. `172.22.0.3`). Keep `superlink_port=9092` unless you changed it.
-3. Launch one analysis per participant (`cid` ranges from `0` to `total_clients-1`). Each SuperNode connects to the running SuperLink, receives the bundled ClientApp, and logs
-   ```
-   [fedmed-supernode-app] SUMMARY {"kind":"train", ... }
-   ```
-4. `/outgoing/client_metrics.json` captures the last `SUMMARY` payload for auditing.
-
-> **Tip:** The SuperNode container keeps reconnecting automatically while the SuperLink is up, so you always run the SuperLink pipeline first and tear it down last.
+**Order:** Run SuperLink first; SuperNodes connect while it’s up.
 
 ---
 
-### 5. Cleanup
+### 6) Cleanup
 
-1. Tear the stack down from the repo root:
+1. Tear down the stack:
    ```bash
    ./minichris.sh down
    ```
-   (This runs `minichris/unmake.sh`, stopping containers and removing associated networks/volumes.)
-2. Remove the OCI images if you no longer need them:
+2. Remove images if desired:
    ```bash
-   docker image rm docker.io/fedmed/pl-superlink:0.1.3 docker.io/fedmed/pl-supernode:0.1.3
+   docker image rm docker.io/fedmed/pl-superlink:x.x.x docker.io/fedmed/pl-supernode:x.x.x
    ```
-3. Optional: prune Flower state caches created during the run:
+3. Optional: prune state caches:
    ```bash
    rm -rf /tmp/fedmed-flwr /tmp/fedmed-flwr-node*
    ```
 
-Re-run the workflow anytime by rebuilding the images (Step 1) and executing `./minichris.sh` again. The Flower App version stays synchronized with the containers, so any change in `fedmed_flower_app/` takes effect as soon as you rebuild `fedmed/pl-superlink`.
+Re-run by rebuilding (Step 1) and running `./minichris.sh`. The Flower App stays in sync once you rebuild SuperLink.

@@ -14,6 +14,12 @@
 
 ** **
 
+## Overview
+
+This project packages a Flower-based federated learning demo (SuperLink + SuperNode) as ChRIS plugins and runs them inside miniChRIS. The current ML task uses PneumoniaMNIST with a small CNN. No GPU is required. SuperLink bundles the Flower app so SuperNodes always pull a matching client. The Superlink and Supernodes communicate through reverse SSH via a bastion for cross-machine runs. We also provide a single-machine Docker-network fallback for demo purposes.
+
+For step-by-step run instructions, see `run_tutorial.md`.
+
 ## Sprint presentations
 [Sprint 1](https://drive.google.com/file/d/1YTHomhBlerSoSIfBh1ot-iieM9HAaYIk/view?usp=sharing)
 
