@@ -15,6 +15,17 @@ Below is the workflow for building images, booting miniChRIS, importing pipeline
 
 ---
 
+### 0) Pre-run checklist
+- Decide which mode you’ll use:
+  - Reverse SSH (cross-machine): bastion running (e.g., AWS), SSH keys available (`id_ed25519` + matching `known_hosts`).
+  - Single-machine (demo): all components on one host; Docker network only.
+- If using reverse SSH on AWS:
+  - Launch a small EC2 instance as a bastion (Linux AMI; allow inbound SSH/22).
+  - Generate or use an SSH keypair (`id_ed25519`); add the bastion host to `known_hosts`.
+  - Verify you can `ssh -i id_ed25519 <user>@<bastion-ip>` from your machine(s) before wiring it into pipelines.
+- Ensure Docker is running.
+- If you run into other issues, see the **Common Issues** section at the bottom. 
+
 ### 1) Build (or rebuild) the OCI images
 
 ```bash
@@ -55,7 +66,7 @@ This boots the stack, runs `chrisomatic`, and registers both FedMed plugins.
 ### 4) Import the pipelines via the UI
 
 1. Open `http://localhost:8020/pipelines`
-2. If you decide to use the reverse SSH method, go to the plugins folder and change bastion host and bastion ports based on how you set it up. If you are running the demo version, go to the supernode yml files and change the superlink host to the ip the superlink prints out when you run it. 
+2. If you decide to use the reverse SSH method, go to the plugins folder and change bastion host and bastion ports based on how you set it up. If you are running the demo version, go to the supernode yml files and change the superlink host to the ip the superlink prints out when you run it. (To see the output, click the "**>_**" symbol at the top of the screen). 
 3. Upload all YAMLs from `pipelines/`:
    - `pipelines/fedmed_pl_superlink.yml`
    - `pipelines/fedmed_pl_supernode_x.yml` do this for 0, 1, and 2. 
@@ -94,3 +105,20 @@ This boots the stack, runs `chrisomatic`, and registers both FedMed plugins.
    ```
 
 Re-run by rebuilding (Step 1) and running `./minichris.sh`. The Flower App stays in sync once you rebuild SuperLink.
+
+## Common Issues (With Fixes)
+
+**It is highly recommended that you run this on a Unix machine if available. If you do not have one available, a VM could also work. If you run into any issues, this should be the first thing you should try.**
+
+- Can't get Supernode to connect to the Superlink:
+   - Make sure you have set the correct host address in all of the pipelines. The IP address will be printed when you run the superlink (or you can get it from your AWS instance). 
+   - Sometimes the Supernode will not connect to the Superlink through reverse SSH when you run them both plugins on the same device. Either run them on seperate devices, or connect them through the docker network instead. 
+- The Superlink/Supernode randomly stops it's run before finishing: 
+   - This is seemingly from a UI bug within ChRIS that causes a running plugin to end when you close the tab. Run the Superlink and Supernodes in different tabs and make sure you don't close them. 
+- General Fixes:
+   - Run `./minichris.sh down` from the repo root then pull it back up. 
+   - Clear cache in browser. 
+   - Restart Docker. 
+   - Restart Computer.
+
+**With any other issues, reach out to the FedMed team and we can try to help you through it.**
