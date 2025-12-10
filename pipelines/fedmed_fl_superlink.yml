@@ -19,7 +19,7 @@ plugin_tree:
       rounds: 3
       total_clients: 3
       local_epochs: 10
-      learning_rate: 0.2
+      learning_rate: 0.02
       data_seed: 13
       fraction_evaluate: 1.0
       summary_file: server_summary.json
