@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-IMAGE="${IMAGE:-docker.io/fedmed/pl-superlink:0.1.3}"
+IMAGE="${IMAGE:-docker.io/fedmed/pl-superlink:0.1.4}"
 ROUNDS="${ROUNDS:-3}"
 TOTAL_CLIENTS="${TOTAL_CLIENTS:-3}"
 LOCAL_EPOCHS="${LOCAL_EPOCHS:-10}"
