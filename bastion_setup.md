@@ -167,7 +167,7 @@ ssh-keyscan -t ed25519 <elastic-ip> > known_hosts
 This records the bastion’s server fingerprint, for example:
 
 ```
-52.71.46.62 ssh-ed25519 AAAAC3Nza...
+203.0.113.10 ssh-ed25519 AAAAC3Nza...
 ```
 
 This ensures secure host authentication/identification.
